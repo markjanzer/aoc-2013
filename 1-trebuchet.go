@@ -9,39 +9,38 @@ import (
 
 func main() {
 	// old value 11, new value 29
-	test_calibration_value("two1nine", 11)
+	// test_calibration_value("two1nine", 29)
 	// old value 24, new value 14
-	test_calibration_value("zoneight234", 24)
+	// test_calibration_value("zoneight234", 14)
 	// old value 22, new value 13
-	test_calibration_value("abcone2threexyz", 22)
-
-	return
+	// test_calibration_value("abcone2threexyz", 13)
+	// return
 
 	// Read text from https://adventofcode.com/2023/day/1/input
-	// var calibration_codes, err1 = get_calibration_codes()
-	// if err1 != nil {
-	// 	fmt.Println("Error:", err1)
-	// 	return
-	// }
+	var calibration_codes, err1 = get_calibration_codes()
+	if err1 != nil {
+		fmt.Println("Error:", err1)
+		return
+	}
 
-	// // Convert each line to a number
-	// var calibration_values []int = make([]int, len(calibration_codes))
-	// for i, line := range calibration_codes {
-	// 	var value, err2 = calibration_value(line)
-	// 	if err2 != nil {
-	// 		fmt.Println("Error:", err2)
-	// 		return
-	// 	} else {
-	// 		calibration_values[i] = value
-	// 	}
-	// }
+	// Convert each line to a number
+	var calibration_values []int = make([]int, len(calibration_codes))
+	for i, line := range calibration_codes {
+		var value, err2 = calibration_value(line)
+		if err2 != nil {
+			fmt.Println("Error:", err2)
+			return
+		} else {
+			calibration_values[i] = value
+		}
+	}
 
-	// var sum int = 0
-	// for _, value := range calibration_values {
-	// 	sum += value
-	// }
+	var sum int = 0
+	for _, value := range calibration_values {
+		sum += value
+	}
 
-	// fmt.Println("Sum:", sum)
+	fmt.Println("Sum:", sum)
 }
 
 func get_calibration_codes() ([]string, error) {
@@ -68,37 +67,79 @@ func get_calibration_codes() ([]string, error) {
 
 // Convert string to number
 func calibration_value(line string) (int, error) {
-	digits, string_had_digit := first_and_last_digit(line)
+	digits := first_and_last_digit(line)
 
-	if string_had_digit == false {
+	if len(digits) == 0 {
 		return 0, fmt.Errorf("No number in the string. Digits: %v, Line: %s", digits, line)
 	}
 
 	return ((digits[0] * 10) + digits[1]), nil
 }
 
-func first_and_last_digit(line string) ([]int, bool) {
+func first_and_last_digit(line string) []int {
 	var digits = make([]int, 0, 2)
-	var passed_digit bool = false
 	var sequential_letters string = ""
+
+	// var digit_names = map[string]int{
+	// 	"one":   1,
+	// 	"two":   2,
+	// 	"three": 3,
+	// 	"four":  4,
+	// 	"five":  5,
+	// 	"six":   6,
+	// 	"seven": 7,
+	// 	"eight": 8,
+	// 	"nine":  9,
+	// }
 
 	for _, runeValue := range line {
 		if unicode.IsDigit(runeValue) {
 			sequential_letters = ""
-			value := int_from_unicode(runeValue)
-			if len(digits) == 0 {
-				digits = append(digits, value)
-				digits = append(digits, value)
-			} else {
-				digits[1] = value
-			}
-			passed_digit = true
+			digits = append_digit(digits, int_from_unicode(runeValue))
 		} else {
 			sequential_letters += string(runeValue)
+			var count = len(sequential_letters)
+			if count >= 3 && sequential_letters[count-3:] == "one" {
+				digits = append_digit(digits, 1)
+			}
+			if count >= 3 && sequential_letters[count-3:] == "two" {
+				digits = append_digit(digits, 2)
+			}
+			if count >= 5 && sequential_letters[count-5:] == "three" {
+				digits = append_digit(digits, 3)
+			}
+			if count >= 4 && sequential_letters[count-4:] == "four" {
+				digits = append_digit(digits, 4)
+			}
+			if count >= 4 && sequential_letters[count-4:] == "five" {
+				digits = append_digit(digits, 5)
+			}
+			if count >= 3 && sequential_letters[count-3:] == "six" {
+				digits = append_digit(digits, 6)
+			}
+			if count >= 5 && sequential_letters[count-5:] == "seven" {
+				digits = append_digit(digits, 7)
+			}
+			if count >= 5 && sequential_letters[count-5:] == "eight" {
+				digits = append_digit(digits, 8)
+			}
+			if count >= 4 && sequential_letters[count-4:] == "nine" {
+				digits = append_digit(digits, 9)
+			}
 		}
 	}
 
-	return digits, passed_digit
+	return digits
+}
+
+func append_digit(digits []int, digit int) []int {
+	if len(digits) == 0 {
+		digits = append(digits, digit)
+		digits = append(digits, digit)
+	} else {
+		digits[1] = digit
+	}
+	return digits
 }
 
 func int_from_unicode(runeValue rune) int {
