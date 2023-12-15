@@ -40,6 +40,7 @@ func main() {
 		sum += value
 	}
 
+	// Should return 56324
 	fmt.Println("Sum:", sum)
 }
 
@@ -76,21 +77,21 @@ func calibration_value(line string) (int, error) {
 	return ((digits[0] * 10) + digits[1]), nil
 }
 
+var digit_names = map[string]int{
+	"one":   1,
+	"two":   2,
+	"three": 3,
+	"four":  4,
+	"five":  5,
+	"six":   6,
+	"seven": 7,
+	"eight": 8,
+	"nine":  9,
+}
+
 func first_and_last_digit(line string) []int {
 	var digits = make([]int, 0, 2)
 	var sequential_letters string = ""
-
-	// var digit_names = map[string]int{
-	// 	"one":   1,
-	// 	"two":   2,
-	// 	"three": 3,
-	// 	"four":  4,
-	// 	"five":  5,
-	// 	"six":   6,
-	// 	"seven": 7,
-	// 	"eight": 8,
-	// 	"nine":  9,
-	// }
 
 	for _, runeValue := range line {
 		if unicode.IsDigit(runeValue) {
@@ -99,32 +100,10 @@ func first_and_last_digit(line string) []int {
 		} else {
 			sequential_letters += string(runeValue)
 			var count = len(sequential_letters)
-			if count >= 3 && sequential_letters[count-3:] == "one" {
-				digits = append_digit(digits, 1)
-			}
-			if count >= 3 && sequential_letters[count-3:] == "two" {
-				digits = append_digit(digits, 2)
-			}
-			if count >= 5 && sequential_letters[count-5:] == "three" {
-				digits = append_digit(digits, 3)
-			}
-			if count >= 4 && sequential_letters[count-4:] == "four" {
-				digits = append_digit(digits, 4)
-			}
-			if count >= 4 && sequential_letters[count-4:] == "five" {
-				digits = append_digit(digits, 5)
-			}
-			if count >= 3 && sequential_letters[count-3:] == "six" {
-				digits = append_digit(digits, 6)
-			}
-			if count >= 5 && sequential_letters[count-5:] == "seven" {
-				digits = append_digit(digits, 7)
-			}
-			if count >= 5 && sequential_letters[count-5:] == "eight" {
-				digits = append_digit(digits, 8)
-			}
-			if count >= 4 && sequential_letters[count-4:] == "nine" {
-				digits = append_digit(digits, 9)
+			for name, value := range digit_names {
+				if count >= len(name) && sequential_letters[count-len(name):] == name {
+					digits = append_digit(digits, value)
+				}
 			}
 		}
 	}
