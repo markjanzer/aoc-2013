@@ -108,6 +108,30 @@ func gameIsPossible(game Game) bool {
 	return true
 }
 
+func minimumPossibleColors(game Game) Set {
+	minimumSet := Set{
+		"red":   0,
+		"green": 0,
+		"blue":  0,
+	}
+
+	for _, set := range game.Sets {
+		for _, color := range validColors {
+			if set[color] > minimumSet[color] {
+				minimumSet[color] = set[color]
+			}
+		}
+	}
+
+	return minimumSet
+}
+
+func gamePower(game Game) int {
+	minimumSet := minimumPossibleColors(game)
+
+	return minimumSet["red"] * minimumSet["green"] * minimumSet["blue"]
+}
+
 func main() {
 	gameStrings, err := getGameStrings()
 	if err != nil {
@@ -126,16 +150,17 @@ func main() {
 		games = append(games, game)
 	}
 
+	// sum := 0
+	// for _, game := range games {
+	// 	if gameIsPossible(game) {
+	// 		sum += game.ID
+	// 	}
+	// }
+
 	sum := 0
 	for _, game := range games {
-		if gameIsPossible(game) {
-			sum += game.ID
-		}
+		sum += gamePower(game)
 	}
 
 	fmt.Println("Sum:", sum)
-
-	// result, err := parseGame("Game 1: 12 red, 2 green, 5 blue; 9 red, 6 green, 4 blue; 10 red, 2 green, 5 blue; 8 blue, 9 red")
-
-	fmt.Println("done")
 }

@@ -7,6 +7,8 @@ import (
 	"unicode"
 )
 
+const DataFile string = "data.txt"
+
 func main() {
 	// old value 11, new value 29
 	// test_calibration_value("two1nine", 29)
@@ -45,7 +47,7 @@ func main() {
 }
 
 func get_calibration_codes() ([]string, error) {
-	file, err := os.Open("1-trebuchet-data.txt")
+	file, err := os.Open(DataFile)
 
 	if err != nil {
 		fmt.Println("Error:", err)
