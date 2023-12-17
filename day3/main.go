@@ -18,6 +18,11 @@ const TestString string = `467..114..
 ...$.*....
 .664.598..`
 
+const TestIdentify string = `42..
+$*..
+..35
+...*`
+
 const DataFile string = "data.txt"
 
 // We can assume that each line of the string is the same length
@@ -63,11 +68,6 @@ type Number struct {
 	plane Plane
 }
 
-const TestIdentify string = `42..
-$...
-..35
-...*`
-
 func getDataString() (data string) {
 	file, err := os.Open(DataFile)
 	assertNoError((err))
@@ -81,7 +81,6 @@ func getDataString() (data string) {
 }
 
 func stringToMatrix(input string) (matrix [][]byte) {
-
 	lines := strings.Split(input, "\n")
 	for _, line := range lines {
 		matrix = append(matrix, []byte(line))
@@ -102,7 +101,11 @@ func byteIsPeriod(b byte) bool {
 	return b == 46
 }
 
-func identifyNumbersAndSymbols(matrix [][]byte) (numbers []Number, symbols []Point) {
+func byteIsGear(b byte) bool {
+	return b == 42
+}
+
+func identifyNumbers(matrix [][]byte) (numbers []Number) {
 	for y, line := range matrix {
 		usingNumber := false
 		tempNumber := Number{}
@@ -117,10 +120,6 @@ func identifyNumbersAndSymbols(matrix [][]byte) (numbers []Number, symbols []Poi
 					usingNumber = false
 				}
 			}
-
-			if !byteIsDigit(b) && !byteIsPeriod(b) {
-				symbols = append(symbols, Point{x, y})
-			}
 		}
 		if usingNumber {
 			numbers = append(numbers, tempNumber)
@@ -128,6 +127,29 @@ func identifyNumbersAndSymbols(matrix [][]byte) (numbers []Number, symbols []Poi
 		tempNumber = Number{}
 		usingNumber = false
 	}
+	return
+}
+
+func identifySymbols(matrix [][]byte) (symbols []Point) {
+	for y, line := range matrix {
+		for x, b := range line {
+			if !byteIsDigit(b) && !byteIsPeriod(b) {
+				symbols = append(symbols, Point{x, y})
+			}
+		}
+	}
+	return
+}
+
+func identifyGears(matrix [][]byte) (gears []Point) {
+	for y, line := range matrix {
+		for x, b := range line {
+			if byteIsGear(b) {
+				gears = append(gears, Point{x, y})
+			}
+		}
+	}
+
 	return
 }
 
@@ -164,7 +186,40 @@ func findNumbersNextToSymbol(numbers []Number, symbols []Point) (numbersNextToSy
 	return
 }
 
-func findGearsNextToNumber()
+func gearPower(gear Point, numbers []Number) int {
+	gearPlane := pointToPlane(gear)
+	adjacentToGear := expandedPlane(gearPlane)
+
+	var numbersNextToGear []int
+	for _, number := range numbers {
+		if planesOverlap(number.plane, adjacentToGear) {
+			numbersNextToGear = append(numbersNextToGear, number.value)
+		}
+	}
+
+	if len(numbersNextToGear) < 2 {
+		return 0
+	}
+
+	result := 0
+	for _, number := range numbersNextToGear {
+		if result == 0 {
+			result = number
+		} else {
+			result = result * number
+		}
+	}
+	return result
+}
+
+func pointToPlane(point Point) Plane {
+	return Plane{
+		xMin: point.x,
+		xMax: point.x,
+		yMin: point.y,
+		yMax: point.y,
+	}
+}
 
 func expandedPlane(plane Plane) Plane {
 	return Plane{
@@ -182,13 +237,12 @@ func pointInPlane(point Point, plane Plane) bool {
 		point.y <= plane.yMax)
 }
 
-// Might use this
-// func planesOverlap(plane1, plane2 Plane) bool {
-// 	return (plane1.xMin <= plane2.xMax &&
-// 		plane1.xMax >= plane2.xMin &&
-// 		plane1.yMin <= plane2.yMax &&
-// 		plane1.yMax >= plane2.yMin)
-// }
+func planesOverlap(plane1, plane2 Plane) bool {
+	return (plane1.xMin <= plane2.xMax &&
+		plane1.xMax >= plane2.xMin &&
+		plane1.yMin <= plane2.yMax &&
+		plane1.yMax >= plane2.yMin)
+}
 
 func sumNumbers(numbers []Number) (sum int) {
 	for _, number := range numbers {
@@ -197,29 +251,27 @@ func sumNumbers(numbers []Number) (sum int) {
 	return
 }
 
-func solve1(input string) int result {
+func solve1(input string) int {
 	matrix := stringToMatrix(input)
-	numbers, symbols := identifyNumbersAndSymbols(matrix)
+	numbers := identifyNumbers(matrix)
+	symbols := identifySymbols(matrix)
 	numbersNextToSymbols := findNumbersNextToSymbol(numbers, symbols)
-	result := sumNumbers(numbersNextToSymbols)
-	return
+	return sumNumbers(numbersNextToSymbols)
 }
 
-func solve2(input string) int result {
-	// matrix := stringToMatrix(input)
-	// numbers, symbols := identifyNumbersAndSymbols(matrix)
-	// numbersNextToSymbols := findNumbersNextToSymbol(numbers, symbols)
-	// result := sumNumbers(numbersNextToSymbols)
-	return 0
-}
+func solve2(input string) int {
+	matrix := stringToMatrix(input)
+	numbers := identifyNumbers(matrix)
+	gears := identifyGears(matrix)
+	result := 0
+	for _, gear := range gears {
+		result += gearPower(gear, numbers)
+	}
 
+	return result
+}
 
 func main() {
-
-
-	// fmt.Println("Testing identifyNumbers function")
-	// in := identifyNumbers(TestString)
-
 	assertEqual(4361, solve1(TestString))
 	assertEqual(467835, solve2(TestString))
 
@@ -246,3 +298,13 @@ func assertEqual(expected, actual int) {
 		fmt.Println("Test passed")
 	}
 }
+
+/*
+	I think that it might be simpler if all points become planes and then I only
+	do math with planes
+
+	Then we can also do an ExpandPlane function that takes a plane and a point
+	and returns a plane that includes the point (if the plane was empty before then it initializes it)
+
+	A little extra but it's fine. Okay I need ot head out.
+*/
