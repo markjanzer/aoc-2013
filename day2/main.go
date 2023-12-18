@@ -150,6 +150,7 @@ func main() {
 		games = append(games, game)
 	}
 
+	// Part 1 solution
 	// sum := 0
 	// for _, game := range games {
 	// 	if gameIsPossible(game) {
@@ -157,6 +158,7 @@ func main() {
 	// 	}
 	// }
 
+	// Part 2 solution
 	sum := 0
 	for _, game := range games {
 		sum += gamePower(game)
