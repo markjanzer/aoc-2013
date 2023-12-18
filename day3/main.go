@@ -1,9 +1,8 @@
 package main
 
 import (
+	"advent-of-code-2023/lib"
 	"fmt"
-	"io"
-	"os"
 	"strings"
 )
 
@@ -68,18 +67,6 @@ type Number struct {
 	plane Plane
 }
 
-func getDataString() (data string) {
-	file, err := os.Open(DataFile)
-	assertNoError((err))
-	defer file.Close()
-
-	// Read file content into a byte slice
-	byteContent, err := io.ReadAll(file)
-	assertNoError(err)
-
-	return string(byteContent)
-}
-
 func stringToMatrix(input string) (matrix [][]byte) {
 	lines := strings.Split(input, "\n")
 	for _, line := range lines {
@@ -89,30 +76,14 @@ func stringToMatrix(input string) (matrix [][]byte) {
 	return
 }
 
-func byteIsDigit(b byte) bool {
-	return b >= 48 && b <= 57
-}
-
-func intFromByte(b byte) int {
-	return int(b) - 48
-}
-
-func byteIsPeriod(b byte) bool {
-	return b == 46
-}
-
-func byteIsGear(b byte) bool {
-	return b == 42
-}
-
 func identifyNumbers(matrix [][]byte) (numbers []Number) {
 	for y, line := range matrix {
 		usingNumber := false
 		tempNumber := Number{}
 		for x, b := range line {
-			if byteIsDigit(b) {
+			if lib.ByteIsDigit(b) {
 				usingNumber = true
-				tempNumber = addToNumber(tempNumber, x, y, intFromByte(b))
+				tempNumber = addToNumber(tempNumber, x, y, lib.IntFromByte(b))
 			} else {
 				if usingNumber {
 					numbers = append(numbers, tempNumber)
@@ -133,7 +104,7 @@ func identifyNumbers(matrix [][]byte) (numbers []Number) {
 func identifySymbols(matrix [][]byte) (symbols []Point) {
 	for y, line := range matrix {
 		for x, b := range line {
-			if !byteIsDigit(b) && !byteIsPeriod(b) {
+			if !lib.ByteIsDigit(b) && !lib.ByteIsPeriod(b) {
 				symbols = append(symbols, Point{x, y})
 			}
 		}
@@ -144,7 +115,7 @@ func identifySymbols(matrix [][]byte) (symbols []Point) {
 func identifyGears(matrix [][]byte) (gears []Point) {
 	for y, line := range matrix {
 		for x, b := range line {
-			if byteIsGear(b) {
+			if lib.ByteIsGear(b) {
 				gears = append(gears, Point{x, y})
 			}
 		}
@@ -245,10 +216,9 @@ func planesOverlap(plane1, plane2 Plane) bool {
 }
 
 func sumNumbers(numbers []Number) (sum int) {
-	for _, number := range numbers {
-		sum += number.value
-	}
-	return
+	return lib.Reduce(numbers, func(agg int, number Number) int {
+		return agg + number.value
+	}, 0)
 }
 
 func solve1(input string) int {
@@ -263,48 +233,21 @@ func solve2(input string) int {
 	matrix := stringToMatrix(input)
 	numbers := identifyNumbers(matrix)
 	gears := identifyGears(matrix)
-	result := 0
-	for _, gear := range gears {
-		result += gearPower(gear, numbers)
-	}
+	result := lib.Reduce(gears, func(agg int, gear Point) int {
+		return agg + gearPower(gear, numbers)
+	}, 0)
 
 	return result
 }
 
 func main() {
-	assertEqual(4361, solve1(TestString))
-	assertEqual(467835, solve2(TestString))
+	lib.AssertEqual(4361, solve1(TestString))
+	lib.AssertEqual(467835, solve2(TestString))
 
-	dataString := getDataString()
+	dataString := lib.GetDataString(DataFile)
 	result1 := solve1(dataString)
 	result2 := solve2(dataString)
 
 	fmt.Println(result1)
 	fmt.Println(result2)
 }
-
-// Helpers
-func assertNoError(err error) {
-	if err != nil {
-		fmt.Println("Error:", err)
-		panic(err)
-	}
-}
-
-func assertEqual(expected, actual int) {
-	if expected != actual {
-		fmt.Println(fmt.Sprintf("Test failed \n\texpected: %d, got: %d", expected, actual))
-	} else {
-		fmt.Println("Test passed")
-	}
-}
-
-/*
-	I think that it might be simpler if all points become planes and then I only
-	do math with planes
-
-	Then we can also do an ExpandPlane function that takes a plane and a point
-	and returns a plane that includes the point (if the plane was empty before then it initializes it)
-
-	A little extra but it's fine. Okay I need ot head out.
-*/
