@@ -2,7 +2,6 @@ package main
 
 import (
 	"advent-of-code-2023/lib"
-	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -54,7 +53,7 @@ var CardStrengths = map[string]int{
 }
 
 type Hand struct {
-	Cards string
+	Cards []string
 	Bid   int
 	Type  string
 }
@@ -77,14 +76,14 @@ func makeHands(input string) (hands []Hand) {
 
 func makeHand(line string) (hand Hand) {
 	parts := strings.Split(line, " ")
-	hand.Cards = parts[0]
+	hand.Cards = strings.Split(parts[0], "")
 	hand.Bid, _ = strconv.Atoi(parts[1])
 	hand.Type = determineType(hand)
 	return
 }
 
 func determineType(hand Hand) string {
-	cardMap := lib.FrequencyMap(strings.Split(hand.Cards, ""))
+	cardMap := lib.FrequencyMap(hand.Cards)
 	orderedCardCounts := []int{}
 	for _, count := range cardMap {
 		orderedCardCounts = append(orderedCardCounts, count)
@@ -132,17 +131,15 @@ func orderHands(hands []Hand) []Hand {
 	return hands
 }
 
-func compareCards(firstCards, secondCards string) bool {
+func compareCards(firstCards, secondCards []string) bool {
 	for i := 0; i < len(firstCards); i++ {
-		if CardStrengths[string(firstCards[i])] < CardStrengths[string(secondCards[i])] {
+		if CardStrengths[firstCards[i]] < CardStrengths[secondCards[i]] {
 			return true
 		} else if CardStrengths[string(firstCards[i])] > CardStrengths[string(secondCards[i])] {
 			return false
-		} else {
-			break
 		}
 	}
-	return false
+	return true
 }
 
 func solvePart1(input string) int {
@@ -151,7 +148,7 @@ func solvePart1(input string) int {
 	totalWinnings := 0
 	for i := 0; i < len(orderedHands); i++ {
 		winnings := orderedHands[i].Bid * (i + 1)
-		fmt.Println(orderedHands[i], winnings)
+		// fmt.Println(orderedHands[i], winnings)
 		totalWinnings += winnings
 	}
 	return totalWinnings
@@ -167,8 +164,8 @@ func solvePart2(input string) int {
 }
 
 func main() {
-	lib.AssertEqual(6440, solvePart1(TestString))
-	// lib.AssertEqual(1, solvePart2(TestString))
+	// lib.AssertEqual(6440, solvePart1(TestString))
+	lib.AssertEqual(5905, solvePart2(TestString))
 
 	// lib.AssertEqual(1, solvePart1(SmallTestString))
 	// lib.AssertEqual(1, solvePart2(SmallTestString))
