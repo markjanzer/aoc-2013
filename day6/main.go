@@ -36,10 +36,8 @@ type Outcome struct {
 }
 
 func makeGames(input string) (games []Game) {
-	lines := strings.Split(input, "\n")
-	timesLine, recordsLine := lines[0], lines[1]
-	times := lib.IntsFromString(strings.Split(timesLine, ":")[1])
-	records := lib.IntsFromString(strings.Split(recordsLine, ":")[1])
+	times := lib.IntsFromString(getTimesNumbers(input))
+	records := lib.IntsFromString(getRecordsNumbers(input))
 
 	for i := 0; i < len(times); i += 1 {
 		newGame := Game{Time: times[i], Record: records[i]}
@@ -48,6 +46,16 @@ func makeGames(input string) (games []Game) {
 	}
 
 	return
+}
+
+func getTimesNumbers(input string) string {
+	lines := strings.Split(input, "\n")
+	return strings.Split(lines[0], ":")[1]
+}
+
+func getRecordsNumbers(input string) string {
+	lines := strings.Split(input, "\n")
+	return strings.Split(lines[1], ":")[1]
 }
 
 func determineOutcomes(game Game) (outcomes []Outcome) {
@@ -91,12 +99,8 @@ func solvePart1(input string) int {
 */
 
 func makeGame(input string) Game {
-	lines := strings.Split(input, "\n")
-	timesLine, recordsLine := lines[0], lines[1]
-	timesLineWithoutLabel := strings.Split(timesLine, ":")[1]
-	recordsLineWithoutLabel := strings.Split(recordsLine, ":")[1]
-	timeString := strings.ReplaceAll(timesLineWithoutLabel, " ", "")
-	recordString := strings.ReplaceAll(recordsLineWithoutLabel, " ", "")
+	timeString := strings.ReplaceAll(getTimesNumbers(input), " ", "")
+	recordString := strings.ReplaceAll(getRecordsNumbers(input), " ", "")
 	time, _ := strconv.Atoi(timeString)
 	record, _ := strconv.Atoi(recordString)
 
