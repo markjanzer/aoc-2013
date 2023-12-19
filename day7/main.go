@@ -69,30 +69,19 @@ type Hand struct {
 func makeHands(input string) (hands []Hand) {
 	lines := strings.Split(input, "\n")
 	for _, line := range lines {
-		hands = append(hands, makeHand(line))
+		hand := Hand{}
+		parts := strings.Split(line, " ")
+		hand.Cards = strings.Split(parts[0], "")
+		hand.Bid, _ = strconv.Atoi(parts[1])
+
+		orderedCardCounts := orderedCardCounts(hand.Cards)
+		hand.Type = determineType(orderedCardCounts)
+		hands = append(hands, hand)
 	}
 	return
 }
 
-func makeHand(line string) (hand Hand) {
-	parts := strings.Split(line, " ")
-	hand.Cards = strings.Split(parts[0], "")
-	hand.Bid, _ = strconv.Atoi(parts[1])
-	hand.Type = determineType(hand)
-	return
-}
-
-func determineType(hand Hand) string {
-	cardMap := lib.FrequencyMap(hand.Cards)
-	orderedCardCounts := []int{}
-	for _, count := range cardMap {
-		orderedCardCounts = append(orderedCardCounts, count)
-	}
-	// Sort in reverse order
-	sort.Slice(orderedCardCounts, func(i, j int) bool {
-		return orderedCardCounts[i] > orderedCardCounts[j]
-	})
-
+func determineType(orderedCardCounts []int) string {
 	if orderedCardCounts[0] == 1 {
 		return HIGH_CARD
 	} else if orderedCardCounts[0] == 2 {
@@ -114,6 +103,24 @@ func determineType(hand Hand) string {
 	} else {
 		panic("Unknown hand type")
 	}
+}
+
+func orderedCardCounts(cards []string) []int {
+	if len(cards) == 0 {
+		return []int{0}
+	}
+
+	cardMap := lib.FrequencyMap(cards)
+	orderedCardCounts := []int{}
+	for _, count := range cardMap {
+		orderedCardCounts = append(orderedCardCounts, count)
+	}
+	// Sort in reverse order
+	sort.Slice(orderedCardCounts, func(i, j int) bool {
+		return orderedCardCounts[i] > orderedCardCounts[j]
+	})
+
+	return orderedCardCounts
 }
 
 func orderHands(hands []Hand) []Hand {
@@ -148,7 +155,6 @@ func solvePart1(input string) int {
 	totalWinnings := 0
 	for i := 0; i < len(orderedHands); i++ {
 		winnings := orderedHands[i].Bid * (i + 1)
-		// fmt.Println(orderedHands[i], winnings)
 		totalWinnings += winnings
 	}
 	return totalWinnings
@@ -157,24 +163,114 @@ func solvePart1(input string) int {
 /*
 	Part 2 Notes
 
+	Jacks are now Jokers.
+
+	I'll need new CardStrengths that set J to -1
+	I'll need to revamp my frequency map code
+	Pretty much, J will be ignored until the end, when the
+	count of the Jacks will be added to the highest frequency value
 */
 
+var CardStrengthsPart2 = map[string]int{
+	"2": 0,
+	"3": 1,
+	"4": 2,
+	"5": 3,
+	"6": 4,
+	"7": 5,
+	"8": 6,
+	"9": 7,
+	"T": 8,
+	"J": -1,
+	"Q": 10,
+	"K": 11,
+	"A": 12,
+}
+
+// I'd like for this to share a bit more logic
+func makeHandsPart2(input string) (hands []Hand) {
+	lines := strings.Split(input, "\n")
+	for _, line := range lines {
+		hand := Hand{}
+		parts := strings.Split(line, " ")
+		hand.Cards = strings.Split(parts[0], "")
+		hand.Bid, _ = strconv.Atoi(parts[1])
+
+		orderedCardCounts := orderedCardCountsPart2(hand.Cards)
+		hand.Type = determineType(orderedCardCounts)
+		hands = append(hands, hand)
+	}
+	return
+}
+
+func orderedCardCountsPart2(cards []string) []int {
+	jokerCount := 0
+	cardsWithoutJokers := []string{}
+	for _, card := range cards {
+		if card == "J" {
+			jokerCount++
+		} else {
+			cardsWithoutJokers = append(cardsWithoutJokers, card)
+		}
+	}
+
+	orderedCardCounts := orderedCardCounts(cardsWithoutJokers)
+	firstValue := orderedCardCounts[0]
+	firstValue += jokerCount
+	orderedCardCounts[0] = firstValue
+	return orderedCardCounts
+}
+
+// Again, A LOT of duplication
+func orderHandsPart2(hands []Hand) []Hand {
+	sort.Slice(hands, func(i, j int) bool {
+		firstHand := hands[i]
+		secondHand := hands[j]
+		if TypeStrengths[firstHand.Type] < TypeStrengths[secondHand.Type] {
+			return true
+		} else if TypeStrengths[firstHand.Type] > TypeStrengths[secondHand.Type] {
+			return false
+		} else {
+			return compareCardsPart2(firstHand.Cards, secondHand.Cards)
+		}
+	})
+	return hands
+}
+
+func compareCardsPart2(firstCards, secondCards []string) bool {
+	for i := 0; i < len(firstCards); i++ {
+		if CardStrengthsPart2[firstCards[i]] < CardStrengthsPart2[secondCards[i]] {
+			return true
+		} else if CardStrengthsPart2[string(firstCards[i])] > CardStrengthsPart2[string(secondCards[i])] {
+			return false
+		}
+	}
+	return true
+}
+
 func solvePart2(input string) int {
-	return 0
+	hands := makeHandsPart2(input)
+	orderedHands := orderHandsPart2(hands)
+	totalWinnings := 0
+	for i := 0; i < len(orderedHands); i++ {
+		winnings := orderedHands[i].Bid * (i + 1)
+		totalWinnings += winnings
+	}
+	return totalWinnings
 }
 
 func main() {
-	// lib.AssertEqual(6440, solvePart1(TestString))
+	lib.AssertEqual(6440, solvePart1(TestString))
 	lib.AssertEqual(5905, solvePart2(TestString))
 
 	// lib.AssertEqual(1, solvePart1(SmallTestString))
 	// lib.AssertEqual(1, solvePart2(SmallTestString))
 
 	// dataString := lib.GetDataString(DataFile)
-
 	// result1 := solvePart1(dataString)
 	// fmt.Println(result1)
 
+	// dataString := lib.GetDataString(DataFile)
 	// result2 := solvePart2(dataString)
 	// fmt.Println(result2)
 }

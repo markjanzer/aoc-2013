@@ -15,3 +15,11 @@ func Map[T any, R any](collection []T, mapper func(item T) R) []R {
 	}
 	return result
 }
+
+func FrequencyMap(input []string) map[string]int {
+	frequencyMap := map[string]int{}
+	for _, item := range input {
+		frequencyMap[item]++
+	}
+	return frequencyMap
+}
