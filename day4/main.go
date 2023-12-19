@@ -2,7 +2,6 @@ package main
 
 import (
 	"advent-of-code-2023/lib"
-	"fmt"
 	"math"
 	"regexp"
 	"strconv"
@@ -40,20 +39,13 @@ func parseCard(input string) (card Card) {
 	splitValues := strings.Split(cardValues, "|")
 	winningNumbersString, givenNumbersString := splitValues[0], splitValues[1]
 
-	card.WinningNumbers = getInts(winningNumbersString)
-	card.GivenNumbers = getInts(givenNumbersString)
+	card.WinningNumbers = lib.IntsFromString(winningNumbersString)
+	card.GivenNumbers = lib.IntsFromString(givenNumbersString)
 
 	card.NumberOfMatches = len(sharedValues(card.WinningNumbers, card.GivenNumbers))
 	card.Score1 = score1(card.NumberOfMatches)
 
 	return
-}
-
-func getInts(input string) []int {
-	return lib.Map(strings.Fields(input), func(value string) int {
-		result, _ := strconv.Atoi(value)
-		return result
-	})
 }
 
 func sharedValues(a, b []int) (shared []int) {
@@ -146,15 +138,15 @@ func solve2(input string) int {
 }
 
 func main() {
-	// lib.AssertEqual(4, solve1(SmallTestString))
-	// lib.AssertEqual(13, solve1(TestString))
+	lib.AssertEqual(4, solve1(SmallTestString))
+	lib.AssertEqual(13, solve1(TestString))
 
-	// lib.AssertEqual(30, solve2(TestString))
+	lib.AssertEqual(30, solve2(TestString))
 
-	dataString := lib.GetDataString(DataFile)
-	result1 := solve1(dataString)
-	result2 := solve2(dataString)
+	// dataString := lib.GetDataString(DataFile)
+	// result1 := solve1(dataString)
+	// result2 := solve2(dataString)
 
-	fmt.Println(result1)
-	fmt.Println(result2)
+	// fmt.Println(result1)
+	// fmt.Println(result2)
 }
