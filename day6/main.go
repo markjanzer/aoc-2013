@@ -2,7 +2,7 @@ package main
 
 import (
 	"advent-of-code-2023/lib"
-	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -76,19 +76,39 @@ func solvePart1(input string) int {
 		return sum * numberOfWinningOutcomes(game)
 	}, 1)
 
-	// fmt.Println(games)
-	// fmt.Println(result)
-
 	return result
 }
 
 /*
 	Part 2 Notes
 
+	So input is combining here: 7  15   30 becomes 71530
+	First order of business is fixing the input
+	Then I should be able to run almost the same code.
+	I could make it more performant, but probably don't need to
+	I could make it more performant by only calcualating up to the halfway mark
+
 */
 
+func makeGame(input string) Game {
+	lines := strings.Split(input, "\n")
+	timesLine, recordsLine := lines[0], lines[1]
+	timesLineWithoutLabel := strings.Split(timesLine, ":")[1]
+	recordsLineWithoutLabel := strings.Split(recordsLine, ":")[1]
+	timeString := strings.ReplaceAll(timesLineWithoutLabel, " ", "")
+	recordString := strings.ReplaceAll(recordsLineWithoutLabel, " ", "")
+	time, _ := strconv.Atoi(timeString)
+	record, _ := strconv.Atoi(recordString)
+
+	game := Game{Time: time, Record: record}
+	game.PossibleOutcomes = determineOutcomes(game)
+
+	return game
+}
+
 func solvePart2(input string) int {
-	return 0
+	game := makeGame(input)
+	return numberOfWinningOutcomes(game)
 }
 
 func main() {
@@ -96,12 +116,12 @@ func main() {
 	// lib.AssertEqual(49, solvePart2(SmallTestString))
 
 	lib.AssertEqual(288, solvePart1(TestString))
-	// lib.AssertEqual(46, solvePart2(TestString))
+	lib.AssertEqual(71503, solvePart2(TestString))
 
-	dataString := lib.GetDataString(DataFile)
+	// dataString := lib.GetDataString(DataFile)
 
-	result1 := solvePart1(dataString)
-	fmt.Println(result1)
+	// result1 := solvePart1(dataString)
+	// fmt.Println(result1)
 
 	// result2 := solvePart2(dataString)
 	// fmt.Println(result2)
