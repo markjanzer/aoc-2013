@@ -103,7 +103,6 @@ type Journey struct {
 	Start       string
 	Current     string
 	CompletedAt []int
-	Complete    bool
 }
 
 func newJourney(key string) Journey {

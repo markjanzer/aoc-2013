@@ -23,3 +23,22 @@ func FrequencyMap(input []string) map[string]int {
 	}
 	return frequencyMap
 }
+
+func Filter[T any](collection []T, filter func(item T) bool) []T {
+	result := []T{}
+	for _, item := range collection {
+		if filter(item) {
+			result = append(result, item)
+		}
+	}
+	return result
+}
+
+func All[T any](collection []T, eval func(item T) bool) bool {
+	for _, item := range collection {
+		if !eval(item) {
+			return false
+		}
+	}
+	return true
+}

@@ -19,3 +19,11 @@ func IntsFromString(input string) (result []int) {
 func IntIsInRange(input, begin, end int) bool {
 	return input >= begin && input <= end
 }
+
+func Sum(numbers ...int) int {
+	sum := 0
+	for _, number := range numbers {
+		sum += number
+	}
+	return sum
+}
