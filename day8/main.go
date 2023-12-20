@@ -92,14 +92,18 @@ func solvePart1(input string) int {
 
 	Find all of the starting paths (every node that ends with A)
 	Change to be able to iterate while navigating
+	Check all of them when iterating
 
 
+	This approach does not work, the potential number is too big
+	If each journey has a firstComplete and loopInterval then we can look into another solution
 */
 
 type Journey struct {
-	Start        string
-	Current      string
-	ResolvedOnce bool
+	Start       string
+	Current     string
+	CompletedAt []int
+	Complete    bool
 }
 
 func newJourney(key string) Journey {
@@ -109,12 +113,11 @@ func newJourney(key string) Journey {
 	}
 }
 
-func (journey *Journey) atDestination() bool {
+func (journey *Journey) checkCompletion(count int) {
 	atDestination := string(journey.Current[2]) == "Z"
-	if atDestination && !journey.ResolvedOnce {
-		journey.ResolvedOnce = true
+	if atDestination {
+		journey.CompletedAt = append(journey.CompletedAt, count)
 	}
-	return atDestination
 }
 
 func (journey *Journey) travel(direction string, nodeMap NodeMap) {
@@ -122,24 +125,54 @@ func (journey *Journey) travel(direction string, nodeMap NodeMap) {
 	journey.Current = newLocation
 }
 
+func (journey Journey) hasConsistentLoopInterval() bool {
+	if len(journey.CompletedAt) < 3 {
+		panic("Not enough data")
+	}
+
+	firstLoop := journey.CompletedAt[1] - journey.CompletedAt[0]
+	secondLoop := journey.CompletedAt[1] - journey.CompletedAt[0]
+
+	return firstLoop == secondLoop
+}
+
+func (journey Journey) initialComplete() int {
+	return journey.CompletedAt[0]
+}
+
+func (journey Journey) loop() int {
+	return journey.CompletedAt[2] - journey.CompletedAt[1]
+}
+
 type Journeys []Journey
 
-func (journeys Journeys) allAtDestination() bool {
-	for i := range journeys {
-		if !journeys[i].atDestination() {
-			return false
-		}
-	}
-	return true
+func getDirection(directions []string, count int) string {
+	inputIndex := count % len(directions)
+	return directions[inputIndex]
 }
 
-func (journeys Journeys) travel(direction string, nodeMap NodeMap) {
-	for i := range journeys {
-		journeys[i].travel(direction, nodeMap)
-	}
+func lcm(a, b uint64) uint64 {
+	return a * b / gcd(a, b)
 }
 
-func solvePart2(input string) int {
+func gcd(a, b uint64) uint64 {
+	for b != 0 {
+		a, b = b, a%b
+	}
+	return a
+}
+
+func lcmMultiple(numbers []uint64) uint64 {
+	result := numbers[0]
+	for _, num := range numbers[1:] {
+		result = lcm(result, num)
+	}
+	return result
+}
+
+const MaxIterations int = 10000000
+
+func solvePart2(input string) uint64 {
 	splitString := strings.Split(input, "\n\n")
 	inputString := strings.Split(splitString[0], "")
 	nodesString := splitString[1]
@@ -152,29 +185,58 @@ func solvePart2(input string) int {
 		}
 	}
 
+	// Starting points
+	// PQA  CQA  TGA  AAA  BLA  DFA
+
 	count := 0
-	for !journeys.allAtDestination() && count < len(inputString) {
-		inputIndex := count % len(inputString)
-		direction := inputString[inputIndex]
-		fmt.Println(direction)
-		journeys.travel(direction, nodeMap)
-		fmt.Println(journeys)
+	allJourneysHaveTwoLoops := false
+	for !allJourneysHaveTwoLoops && count < MaxIterations {
+		direction := getDirection(inputString, count)
+
+		for i := range journeys {
+			journeys[i].travel(direction, nodeMap)
+			journeys[i].checkCompletion(count)
+		}
+
+		allJourneysHaveTwoLoops = lib.All(journeys, func(journey Journey) bool {
+			return len(journey.CompletedAt) > 2
+		})
+
 		count++
 	}
-	fmt.Println(journeys)
-	return count
+
+	allJourneysHaveConsistentLoopInterval := lib.All(journeys, func(journey Journey) bool {
+		return journey.hasConsistentLoopInterval()
+	})
+	if !allJourneysHaveConsistentLoopInterval {
+		panic("All journeys do not have consistent loop intervals")
+	}
+
+	var loops = []uint64{}
+	for _, journey := range journeys {
+		loops = append(loops, uint64(journey.loop()))
+	}
+
+	result := lcmMultiple(loops)
+
+	// Only the first value is getting set to be true
+	// fmt.Println(journeys)
+	return result
 }
 
 func main() {
-	lib.AssertEqual(2, solvePart1(TestString))
-	lib.AssertEqual(6, solvePart1(SmallTestString))
+	// lib.AssertEqual(2, solvePart1(TestString))
+	// lib.AssertEqual(6, solvePart1(SmallTestString))
 
-	lib.AssertEqual(6, solvePart2(TestString2))
+	lib.AssertEqual(6, int(solvePart2(TestString2)))
 	// lib.AssertEqual(1, solvePart2(SmallTestString))
 
 	// dataString := lib.GetDataString(DataFile)
 	// result1 := solvePart1(dataString)
 	// fmt.Println(result1)
+
+	// fmt.Println(gcd(200, 80))
+	// fmt.Println(lcmMultiple([]uint64{3, 6, 10}))
 
 	dataString := lib.GetDataString(DataFile)
 	result2 := solvePart2(dataString)
