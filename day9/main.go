@@ -2,11 +2,10 @@ package main
 
 import (
 	"advent-of-code-2023/lib"
-	"fmt"
 	"strings"
 )
 
-const SmallTestString string = ``
+const SmallTestString string = `10 13 16 21 30 45`
 
 const TestString string = `0 3 6 9 12 15
 1 3 6 10 15 21
@@ -29,15 +28,14 @@ const DataFile string = "data.txt"
 	When there is no higher array, return that value
 */
 
-func extrapolatedValue(input string) int {
-	structure := [][]int{}
+func createPredictionStructure(input string) (predictionStructure [][]int) {
 	firstArray := lib.IntsFromString(input)
-	structure = append(structure, firstArray)
+	predictionStructure = append(predictionStructure, firstArray)
 
 	for {
-		lastSlice := lib.LastValue(structure)
+		lastSlice := lib.LastValue(predictionStructure)
 		newSlice := differences(lastSlice)
-		structure = append(structure, newSlice)
+		predictionStructure = append(predictionStructure, newSlice)
 
 		allValuesAreZero := lib.All(newSlice, func(value int) bool {
 			return value == 0
@@ -48,7 +46,7 @@ func extrapolatedValue(input string) int {
 		}
 	}
 
-	return sumOfLastValues(structure)
+	return predictionStructure
 }
 
 func differences(numbers []int) []int {
@@ -60,41 +58,72 @@ func differences(numbers []int) []int {
 	return result
 }
 
-func sumOfLastValues(structure [][]int) int {
-	sum := 0
-	for _, slice := range structure {
-		sum += lib.LastValue(slice)
+func expandForward(predictionStructure [][]int) {
+	expandedValue := 0
+	for i := len(predictionStructure) - 1; i >= 0; i-- {
+		currentRow := predictionStructure[i]
+		expandedValue += lib.LastValue(currentRow)
+		predictionStructure[i] = append(currentRow, expandedValue)
 	}
-	return sum
+}
+
+func lastTopLevelValue(predictionStructure [][]int) int {
+	return predictionStructure[0][len(predictionStructure[0])-1]
 }
 
 func solvePart1(input string) int {
 	lines := strings.Split(input, "\n")
 
-	return lib.Reduce(lines, func(result int, line string) int {
-		return result + extrapolatedValue(line)
-	}, 0)
+	sum := 0
+	for _, line := range lines {
+		predictionStructure := createPredictionStructure(line)
+		expandForward(predictionStructure)
+		value := lastTopLevelValue(predictionStructure)
+		sum += value
+	}
+
+	return sum
 }
 
 /*
 	Part 2 Notes
 
+	Instead of extrapolating the future, we're extrapolating the past
+	A similar solution should work for the first values and subtraction rather than last values and addition
 */
 
+func expandBackward(predictionStructure [][]int) {
+	expandedValue := 0
+	for i := len(predictionStructure) - 1; i >= 0; i-- {
+		currentRow := predictionStructure[i]
+		expandedValue = currentRow[0] - expandedValue
+		predictionStructure[i] = lib.Prepend(currentRow, expandedValue)
+	}
+}
+
 func solvePart2(input string) int {
-	return 0
+	lines := strings.Split(input, "\n")
+
+	sum := 0
+	for _, line := range lines {
+		predictionStructure := createPredictionStructure(line)
+		expandBackward(predictionStructure)
+		value := predictionStructure[0][0]
+		sum += value
+	}
+
+	return sum
 }
 
 func main() {
 	lib.AssertEqual(114, solvePart1(TestString))
-	// lib.AssertEqual(1, solvePart2(TestString))
+	lib.AssertEqual(2, solvePart2(TestString))
 
-	// lib.AssertEqual(1, solvePart1(SmallTestString))
-	// lib.AssertEqual(1, solvePart2(SmallTestString))
+	lib.AssertEqual(5, solvePart2(SmallTestString))
 
-	dataString := lib.GetDataString(DataFile)
-	result1 := solvePart1(dataString)
-	fmt.Println(result1)
+	// dataString := lib.GetDataString(DataFile)
+	// result1 := solvePart1(dataString)
+	// fmt.Println(result1)
 
 	// dataString := lib.GetDataString(DataFile)
 	// result2 := solvePart2(dataString)
