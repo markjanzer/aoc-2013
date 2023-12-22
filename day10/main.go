@@ -26,30 +26,8 @@ const DataFile string = "data.txt"
 	We're going to start by making a grid of bytes
 	Then we're going to find the S, and get the current coordinates
 
-	tracker {
-		cameFrom: "NESW"
-		coordinates: {
-			x: 0
-			y: 0
-		}
-		distance: 0
-	}
-
-	(coordinate)move(direction) {
-
-		switch direction {
-		case N
-		  y -= 1
-		case E
-		  x += 1
-		case S
-		  y += 1
-		case W
-		  x -= 1
-		default:
-			"we done goofed"
-		}
-	}
+	Okay when travelling we need to know the character we're coming from, the direction we're going
+	and the character we're going to
 
 */
 
@@ -106,7 +84,7 @@ func (tracker Tracker) move() Tracker {
 
 		fmt.Println(direction, newCharacter)
 
-		if validMove(direction, newCharacter) {
+		if validMove(direction, tracker.character(), newCharacter) {
 			fmt.Println("valid move!")
 			newTracker := Tracker{reverse(direction), newCoordinates, tracker.Distance + 1, tracker.Grid}
 			return newTracker
@@ -117,8 +95,9 @@ func (tracker Tracker) move() Tracker {
 
 // Determines whether or not a move a certain direction can
 // be made to the character
-func validMove(direction string, newCharacter string) bool {
-	switch newCharacter {
+
+func validTo(direction, character string) bool {
+	switch character {
 	case "S":
 		return true
 	case ".":
@@ -136,9 +115,37 @@ func validMove(direction string, newCharacter string) bool {
 	case "F":
 		return direction == "N" || direction == "W"
 	default:
-		fmt.Println(newCharacter)
+		fmt.Println(character)
 		panic("Not a valid character")
 	}
+}
+
+func validFrom(direction, character string) bool {
+	switch character {
+	case "S":
+		return true
+	case ".":
+		panic("Moving from .")
+	case "|":
+		return direction == "N" || direction == "S"
+	case "-":
+		return direction == "E" || direction == "W"
+	case "L":
+		return direction == "N" || direction == "E"
+	case "J":
+		return direction == "N" || direction == "W"
+	case "7":
+		return direction == "S" || direction == "W"
+	case "F":
+		return direction == "S" || direction == "E"
+	default:
+		fmt.Println(character)
+		panic("Not a valid character")
+	}
+}
+
+func validMove(direction string, oldCharacter, newCharacter string) bool {
+	return validTo(direction, newCharacter) && validFrom(direction, oldCharacter)
 }
 
 func reverse(direction string) string {
