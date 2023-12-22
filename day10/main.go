@@ -3,6 +3,7 @@ package main
 import (
 	"advent-of-code-2023/lib"
 	"fmt"
+	"slices"
 )
 
 const SmallTestString string = `.....
@@ -17,6 +18,20 @@ const TestString string = `
 SJ.L7
 |F--J
 LJ...`
+
+const Part2TestString1 string = `...........
+.S-------7.
+.|F-----7|.
+.||.....||.
+.||.....||.
+.|L-7.F-J|.
+.|..|.|..|.
+.L--J.L--J.
+...........`
+
+const Part2TestString2 string = `...........`
+
+const Part2TestString3 string = `...........`
 
 const DataFile string = "data.txt"
 
@@ -93,55 +108,36 @@ func (tracker Tracker) move() Tracker {
 	panic("No valid moves??")
 }
 
-// Determines whether or not a move a certain direction can
-// be made to the character
+// Determines whether you can move a direction from the character
+var characterFromMap = map[string][]string{
+	"S": DIRECTIONS,
+	".": {},
+	"|": {"N", "S"},
+	"-": {"E", "W"},
+	"L": {"N", "E"},
+	"J": {"N", "W"},
+	"F": {"S", "E"},
+	"7": {"S", "W"},
+}
 
-func validTo(direction, character string) bool {
-	switch character {
-	case "S":
-		return true
-	case ".":
-		return false
-	case "|":
-		return direction == "N" || direction == "S"
-	case "-":
-		return direction == "E" || direction == "W"
-	case "L":
-		return direction == "S" || direction == "W"
-	case "J":
-		return direction == "S" || direction == "E"
-	case "7":
-		return direction == "N" || direction == "E"
-	case "F":
-		return direction == "N" || direction == "W"
-	default:
-		fmt.Println(character)
-		panic("Not a valid character")
-	}
+// Determines whether you can move in a direction to the character
+var characterToMap = map[string][]string{
+	"S": DIRECTIONS,
+	".": {},
+	"|": {"N", "S"},
+	"-": {"E", "W"},
+	"L": {"S", "W"},
+	"J": {"S", "E"},
+	"F": {"N", "W"},
+	"7": {"N", "E"},
 }
 
 func validFrom(direction, character string) bool {
-	switch character {
-	case "S":
-		return true
-	case ".":
-		panic("Moving from .")
-	case "|":
-		return direction == "N" || direction == "S"
-	case "-":
-		return direction == "E" || direction == "W"
-	case "L":
-		return direction == "N" || direction == "E"
-	case "J":
-		return direction == "N" || direction == "W"
-	case "7":
-		return direction == "S" || direction == "W"
-	case "F":
-		return direction == "S" || direction == "E"
-	default:
-		fmt.Println(character)
-		panic("Not a valid character")
-	}
+	return slices.Contains(characterFromMap[character], direction)
+}
+
+func validTo(direction, character string) bool {
+	return slices.Contains(characterToMap[character], direction)
 }
 
 func validMove(direction string, oldCharacter, newCharacter string) bool {
@@ -149,19 +145,10 @@ func validMove(direction string, oldCharacter, newCharacter string) bool {
 }
 
 func reverse(direction string) string {
-	switch direction {
-	case "N":
-		return "S"
-	case "E":
-		return "W"
-	case "S":
-		return "N"
-	case "W":
-		return "E"
-	default:
-		fmt.Println(direction)
-		panic("Not a valid direction")
-	}
+	indexOfDirection := lib.FindIndex(DIRECTIONS, func(value string) bool {
+		return value == direction
+	})
+	return DIRECTIONS[(indexOfDirection+2)%4]
 }
 
 func (tracker Tracker) characterAt(coordinates Coordinates) string {
@@ -225,14 +212,22 @@ func solvePart2(input string) int {
 
 func main() {
 	lib.AssertEqual(8, solvePart1(TestString))
-	// lib.AssertEqual(1, solvePart2(TestString))
-
 	lib.AssertEqual(4, solvePart1(SmallTestString))
-	// lib.AssertEqual(1, solvePart2(SmallTestString))
+
+	// lib.AssertEqual(4, solvePart2(Part2TestString1))
+	// lib.AssertEqual(8, solvePart2(Part2TestString2))
+	// lib.AssertEqual(10, solvePart2(Part2TestString3))
 
 	dataString := lib.GetDataString(DataFile)
 	result1 := solvePart1(dataString)
+	lib.AssertEqual(6842, result1)
 	fmt.Println(result1)
+
+	// directions := []string{"N", "S"}
+	// result := lib.Map(directions, func(direction string) string {
+	// 	return reverse(direction)
+	// })
+	// fmt.Println(result)
 
 	// dataString := lib.GetDataString(DataFile)
 	// result2 := solvePart2(dataString)
