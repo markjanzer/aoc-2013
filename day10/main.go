@@ -29,9 +29,27 @@ const Part2TestString1 string = `...........
 .L--J.L--J.
 ...........`
 
-const Part2TestString2 string = `...........`
+const Part2TestString2 string = `.F----7F7F7F7F-7....
+.|F--7||||||||FJ....
+.||.FJ||||||||L7....
+FJL7L7LJLJ||LJ.L-7..
+L--J.L7...LJS7F-7L7.
+....F-J..F7FJ|L7L7L7
+....L7.F7||L7|.L7L7|
+.....|FJLJ|FJ|F7|.LJ
+....FJL-7.||.||||...
+....L---J.LJ.LJLJ...`
 
-const Part2TestString3 string = `...........`
+const Part2TestString3 string = `FF7FSF7F7F7F7F7F---7
+L|LJ||||||||||||F--J
+FL-7LJLJ||||||LJL-77
+F--JF--7||LJLJ7F7FJ-
+L---JF-JLJ.||-FJLJJ7
+|F|F-JF---7F7-L7L|7|
+|FFJF7L7F-JF7|JL---7
+7-L-JL7||F7|L7F-7F7|
+L.L7LFJ|||||FJL7||LJ
+L7JLJL-JLJLJL--JLJ.L`
 
 const DataFile string = "data.txt"
 
@@ -78,34 +96,35 @@ func (coordinates Coordinates) move(direction string) Coordinates {
 var DIRECTIONS = []string{"N", "E", "S", "W"}
 
 func (tracker Tracker) move() Tracker {
+	validDirections := []string{}
 	for _, direction := range DIRECTIONS {
 		if direction == tracker.CameFrom {
 			continue
+		} else {
+			validDirections = append(validDirections, direction)
 		}
+	}
 
-		fmt.Println()
-		fmt.Println("direction", direction)
-		newCoordinates := tracker.Coordinates.move(direction)
-
-		fmt.Println("newCoordinates", newCoordinates)
-
-		if !lib.PointInGrid(newCoordinates.X, newCoordinates.Y, tracker.Grid) {
-			continue
-		}
-
-		fmt.Println("valid point in grid")
-
-		newCharacter := tracker.characterAt(newCoordinates)
-
-		fmt.Println(direction, newCharacter)
-
-		if validMove(direction, tracker.character(), newCharacter) {
-			fmt.Println("valid move!")
-			newTracker := Tracker{reverse(direction), newCoordinates, tracker.Distance + 1, tracker.Grid}
+	for _, direction := range validDirections {
+		if validMove(tracker.Coordinates, direction, tracker.Grid) {
+			newTracker := Tracker{reverse(direction), tracker.Coordinates.move(direction), tracker.Distance + 1, tracker.Grid}
 			return newTracker
 		}
 	}
 	panic("No valid moves??")
+}
+
+func validMove(startingPoint Coordinates, direction string, grid [][]byte) bool {
+	newCoordinates := startingPoint.move(direction)
+
+	if !lib.PointInGrid(newCoordinates.X, newCoordinates.Y, grid) {
+		return false
+	}
+
+	originalCharacter := string(grid[startingPoint.Y][startingPoint.X])
+	newCharacter := string(grid[newCoordinates.Y][newCoordinates.X])
+
+	return validMoveBetweenCharacters(direction, originalCharacter, newCharacter)
 }
 
 // Determines whether you can move a direction from the character
@@ -140,7 +159,7 @@ func validTo(direction, character string) bool {
 	return slices.Contains(characterToMap[character], direction)
 }
 
-func validMove(direction string, oldCharacter, newCharacter string) bool {
+func validMoveBetweenCharacters(direction string, oldCharacter, newCharacter string) bool {
 	return validTo(direction, newCharacter) && validFrom(direction, oldCharacter)
 }
 
@@ -180,11 +199,8 @@ func solvePart1(input string) int {
 	animalCoordinates := findAnimal(grid)
 	tracker := createTracker(animalCoordinates, grid)
 
-	tracker.print()
-
 	tracker = tracker.move()
 	for tracker.character() != "S" {
-		tracker.print()
 		tracker = tracker.move()
 	}
 
@@ -204,32 +220,147 @@ func (tracker Tracker) print() {
 /*
 	Part 2 Notes
 
+
+	Part 2 requires that we find the interior of the space created by the pipes
+
+	What are some ways that we can do this?
+	We could keep track of every single pipe in the route
+	Then we could find the left topmost point and go to the right.
+	In that row we have 0 space measured and a starting point, and loop := "open"
+		In the next character over, if there is a space then we increment the total interior space and move on to the next item
+		If the next character is a pipe then we say loop := "closed"
+
+
+
 */
 
+func pipeUnderAnimal(coordinates Coordinates, grid [][]byte) string {
+	validDirections := []string{}
+	for _, direction := range DIRECTIONS {
+		if validMove(coordinates, direction, grid) {
+			validDirections = append(validDirections, direction)
+		}
+	}
+
+	for character, directions := range characterFromMap {
+		if character == "S" || character == "." {
+			continue
+		}
+		fmt.Println(validDirections, character, directions)
+		if lib.All(directions, func(direction string) bool {
+			return slices.Contains(validDirections, direction)
+		}) {
+			return character
+		}
+	}
+
+	panic("No valid pipe found")
+}
+
 func solvePart2(input string) int {
-	return 0
+	grid := lib.StringToGrid(input)
+	gridCopy := grid
+	var loopCoordinates = map[Coordinates]bool{}
+
+	fmt.Println("Previous Grid:")
+	printGrid(grid)
+	fmt.Println()
+
+	animalCoordinates := findAnimal(grid)
+	tracker := createTracker(animalCoordinates, grid)
+	loopCoordinates[tracker.Coordinates] = true
+
+	// tracker.print()
+
+	tracker = tracker.move()
+	loopCoordinates[tracker.Coordinates] = true
+
+	for tracker.character() != "S" {
+		tracker = tracker.move()
+		loopCoordinates[tracker.Coordinates] = true
+	}
+
+	// Replace animal with pipe under animal
+	gridCopy[animalCoordinates.Y][animalCoordinates.X] = lib.CharToByte(pipeUnderAnimal(animalCoordinates, grid))
+
+	containedSpace := 0
+	for y := range grid {
+		loopOpen := false
+		previousCorner := ""
+		for x := range grid[y] {
+			if loopCoordinates[Coordinates{X: x, Y: y}] {
+				if gridCopy[y][x] == lib.CharToByte("|") {
+					loopOpen = !loopOpen
+				} else if gridCopy[y][x] == lib.CharToByte("-") {
+					continue
+				} else if isCorner(string(gridCopy[y][x])) {
+					currentCorner := string(gridCopy[y][x])
+					if previousCorner == "" {
+						previousCorner = string(currentCorner)
+					} else {
+						if previousCorner == oppositeCorner(currentCorner) {
+							loopOpen = !loopOpen
+						}
+						previousCorner = ""
+					}
+				}
+			} else {
+				if loopOpen {
+					// fmt.Println("X: ", x, "Y: ", y)
+					gridCopy[y][x] = lib.CharToByte("I")
+					containedSpace += 1
+				} else {
+					gridCopy[y][x] = lib.CharToByte("0")
+				}
+			}
+		}
+	}
+
+	fmt.Println("New Grid:")
+	printGrid(gridCopy)
+	fmt.Println()
+
+	return containedSpace
+}
+
+func oppositeCorner(pipe string) string {
+	switch pipe {
+	case "L":
+		return "7"
+	case "J":
+		return "F"
+	case "F":
+		return "J"
+	case "7":
+		return "L"
+	default:
+		panic("Invalid pipe")
+	}
+}
+
+func isCorner(pipe string) bool {
+	return pipe == "L" || pipe == "J" || pipe == "F" || pipe == "7"
+}
+
+func printGrid(grid [][]byte) {
+	for y := range grid {
+		fmt.Println(string(grid[y]))
+	}
 }
 
 func main() {
-	lib.AssertEqual(8, solvePart1(TestString))
-	lib.AssertEqual(4, solvePart1(SmallTestString))
+	// lib.AssertEqual(8, solvePart1(TestString))
+	// lib.AssertEqual(4, solvePart1(SmallTestString))
 
-	// lib.AssertEqual(4, solvePart2(Part2TestString1))
-	// lib.AssertEqual(8, solvePart2(Part2TestString2))
-	// lib.AssertEqual(10, solvePart2(Part2TestString3))
-
-	dataString := lib.GetDataString(DataFile)
-	result1 := solvePart1(dataString)
-	lib.AssertEqual(6842, result1)
-	fmt.Println(result1)
-
-	// directions := []string{"N", "S"}
-	// result := lib.Map(directions, func(direction string) string {
-	// 	return reverse(direction)
-	// })
-	// fmt.Println(result)
+	lib.AssertEqual(4, solvePart2(Part2TestString1))
+	lib.AssertEqual(8, solvePart2(Part2TestString2))
+	lib.AssertEqual(10, solvePart2(Part2TestString3))
 
 	// dataString := lib.GetDataString(DataFile)
-	// result2 := solvePart2(dataString)
-	// fmt.Println(result2)
+	// result1 := solvePart1(dataString)
+	// lib.AssertEqual(6842, result1)
+
+	dataString := lib.GetDataString(DataFile)
+	result2 := solvePart2(dataString)
+	fmt.Println(result2)
 }
