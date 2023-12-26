@@ -230,8 +230,6 @@ func (tracker Tracker) print() {
 		In the next character over, if there is a space then we increment the total interior space and move on to the next item
 		If the next character is a pipe then we say loop := "closed"
 
-
-
 */
 
 func pipeUnderAnimal(coordinates Coordinates, grid [][]byte) string {
@@ -246,7 +244,7 @@ func pipeUnderAnimal(coordinates Coordinates, grid [][]byte) string {
 		if character == "S" || character == "." {
 			continue
 		}
-		fmt.Println(validDirections, character, directions)
+		// fmt.Println(validDirections, character, directions)
 		if lib.All(directions, func(direction string) bool {
 			return slices.Contains(validDirections, direction)
 		}) {
@@ -262,9 +260,8 @@ func solvePart2(input string) int {
 	gridCopy := grid
 	var loopCoordinates = map[Coordinates]bool{}
 
-	fmt.Println("Previous Grid:")
-	printGrid(grid)
-	fmt.Println()
+	// fmt.Println("Previous Grid:")
+	// printGrid(grid)
 
 	animalCoordinates := findAnimal(grid)
 	tracker := createTracker(animalCoordinates, grid)
@@ -306,7 +303,6 @@ func solvePart2(input string) int {
 				}
 			} else {
 				if loopOpen {
-					// fmt.Println("X: ", x, "Y: ", y)
 					gridCopy[y][x] = lib.CharToByte("I")
 					containedSpace += 1
 				} else {
@@ -316,9 +312,9 @@ func solvePart2(input string) int {
 		}
 	}
 
-	fmt.Println("New Grid:")
-	printGrid(gridCopy)
-	fmt.Println()
+	// fmt.Println("New Grid:")
+	// printGrid(gridCopy)
+	// fmt.Println()
 
 	return containedSpace
 }
@@ -360,7 +356,7 @@ func main() {
 	// result1 := solvePart1(dataString)
 	// lib.AssertEqual(6842, result1)
 
-	dataString := lib.GetDataString(DataFile)
-	result2 := solvePart2(dataString)
-	fmt.Println(result2)
+	// dataString := lib.GetDataString(DataFile)
+	// result2 := solvePart2(dataString)
+	// fmt.Println(result2)
 }
