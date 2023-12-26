@@ -9,9 +9,9 @@ func AssertNoError(err error) {
 	}
 }
 
-func AssertEqual(expected, actual int) {
+func AssertEqual[T comparable](expected, actual T) {
 	if expected != actual {
-		fmt.Println(fmt.Sprintf("Test failed \n\texpected: %d, got: %d", expected, actual))
+		fmt.Println("Test failed \n\texpected: ", expected, " got: ", actual)
 	} else {
 		fmt.Println("Test passed")
 	}

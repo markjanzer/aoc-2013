@@ -15,3 +15,7 @@ func ByteIsPeriod(b byte) bool {
 func ByteIsGear(b byte) bool {
 	return b == 42
 }
+
+func CharToByte(char string) byte {
+	return []byte(char)[0]
+}
