@@ -96,22 +96,16 @@ func (coordinates Coordinates) move(direction string) Coordinates {
 var DIRECTIONS = []string{"N", "E", "S", "W"}
 
 func (tracker Tracker) move() Tracker {
-	validDirections := []string{}
 	for _, direction := range DIRECTIONS {
-		if direction == tracker.CameFrom {
-			continue
-		} else {
-			validDirections = append(validDirections, direction)
-		}
-	}
-
-	for _, direction := range validDirections {
-		if validMove(tracker.Coordinates, direction, tracker.Grid) {
-			newTracker := Tracker{reverse(direction), tracker.Coordinates.move(direction), tracker.Distance + 1, tracker.Grid}
-			return newTracker
+		if direction != tracker.CameFrom && validMove(tracker.Coordinates, direction, tracker.Grid) {
+			return tracker.moveDirection(direction)
 		}
 	}
 	panic("No valid moves??")
+}
+
+func (tracker Tracker) moveDirection(direction string) Tracker {
+	return Tracker{reverse(direction), tracker.Coordinates.move(direction), tracker.Distance + 1, tracker.Grid}
 }
 
 func validMove(startingPoint Coordinates, direction string, grid [][]byte) bool {
@@ -170,15 +164,15 @@ func reverse(direction string) string {
 	return DIRECTIONS[(indexOfDirection+2)%4]
 }
 
-func (tracker Tracker) characterAt(coordinates Coordinates) string {
-	return string(tracker.Grid[coordinates.Y][coordinates.X])
+func characterAt(coordinates Coordinates, grid [][]byte) string {
+	return string(grid[coordinates.Y][coordinates.X])
 }
 
 func (tracker Tracker) character() string {
-	return tracker.characterAt(tracker.Coordinates)
+	return characterAt(tracker.Coordinates, tracker.Grid)
 }
 
-func findAnimal(grid [][]byte) Coordinates {
+func animalCoordinates(grid [][]byte) Coordinates {
 	for y := range grid {
 		for x := range grid[y] {
 			if string(grid[y][x]) == "S" {
@@ -196,12 +190,14 @@ func createTracker(coordinates Coordinates, grid [][]byte) Tracker {
 func solvePart1(input string) int {
 	grid := lib.StringToGrid(input)
 
-	animalCoordinates := findAnimal(grid)
+	animalCoordinates := animalCoordinates(grid)
 	tracker := createTracker(animalCoordinates, grid)
 
-	tracker = tracker.move()
-	for tracker.character() != "S" {
+	for {
 		tracker = tracker.move()
+		if tracker.character() == "S" {
+			break
+		}
 	}
 
 	return tracker.Distance / 2
@@ -220,34 +216,30 @@ func (tracker Tracker) print() {
 /*
 	Part 2 Notes
 
-
 	Part 2 requires that we find the interior of the space created by the pipes
 
-	What are some ways that we can do this?
-	We could keep track of every single pipe in the route
-	Then we could find the left topmost point and go to the right.
-	In that row we have 0 space measured and a starting point, and loop := "open"
-		In the next character over, if there is a space then we increment the total interior space and move on to the next item
-		If the next character is a pipe then we say loop := "closed"
+	We deterimine all of the points in the loop
+	We figure out what the character is underneath the animal and replace the animal with it
+	Then we iterate over each row in the grid
+		We keep track of how many walls have been passed (walls are determined by N+S directions from a character)
+		If we come across a non-loop character
+			If there are an odd number of walls in front of the character
+				It is inside and we count it
+			Otherwise it is outside and we don't count it
 
+	Return the sum
 */
 
 func pipeUnderAnimal(coordinates Coordinates, grid [][]byte) string {
-	validDirections := []string{}
+	fromDirectionsOfPipe := []string{}
 	for _, direction := range DIRECTIONS {
 		if validMove(coordinates, direction, grid) {
-			validDirections = append(validDirections, direction)
+			fromDirectionsOfPipe = append(fromDirectionsOfPipe, direction)
 		}
 	}
 
 	for character, directions := range characterFromMap {
-		if character == "S" || character == "." {
-			continue
-		}
-		// fmt.Println(validDirections, character, directions)
-		if lib.All(directions, func(direction string) bool {
-			return slices.Contains(validDirections, direction)
-		}) {
+		if character != "S" && character != "." && lib.ContainsSameElements(fromDirectionsOfPipe, directions) {
 			return character
 		}
 	}
@@ -255,98 +247,79 @@ func pipeUnderAnimal(coordinates Coordinates, grid [][]byte) string {
 	panic("No valid pipe found")
 }
 
+func replaceAnimal(coordinates Coordinates, grid [][]byte) {
+	grid[coordinates.Y][coordinates.X] = lib.CharToByte(pipeUnderAnimal(coordinates, grid))
+}
+
+func resetPreviousWalls() map[string]int {
+	return map[string]int{
+		"N": 0,
+		"S": 0,
+		"E": 0,
+		"W": 0,
+	}
+}
+
+// func printGrid(grid [][]byte) {
+// 	for y := range grid {
+// 		fmt.Println(string(grid[y]))
+// 	}
+// }
+
 func solvePart2(input string) int {
 	grid := lib.StringToGrid(input)
-	gridCopy := grid
-	var loopCoordinates = map[Coordinates]bool{}
+	var isPartOfLoop = map[Coordinates]bool{}
 
 	// fmt.Println("Previous Grid:")
 	// printGrid(grid)
 
-	animalCoordinates := findAnimal(grid)
+	animalCoordinates := animalCoordinates(grid)
 	tracker := createTracker(animalCoordinates, grid)
-	loopCoordinates[tracker.Coordinates] = true
 
-	// tracker.print()
-
-	tracker = tracker.move()
-	loopCoordinates[tracker.Coordinates] = true
-
-	for tracker.character() != "S" {
+	for {
+		isPartOfLoop[tracker.Coordinates] = true
 		tracker = tracker.move()
-		loopCoordinates[tracker.Coordinates] = true
+		if tracker.character() == "S" {
+			break
+		}
 	}
 
-	// Replace animal with pipe under animal
-	gridCopy[animalCoordinates.Y][animalCoordinates.X] = lib.CharToByte(pipeUnderAnimal(animalCoordinates, grid))
+	replaceAnimal(animalCoordinates, grid)
 
 	containedSpace := 0
 	for y := range grid {
-		loopOpen := false
-		previousCorner := ""
+		wallsInFrontOfPoint := 0
+		previousWalls := resetPreviousWalls()
 		for x := range grid[y] {
-			if loopCoordinates[Coordinates{X: x, Y: y}] {
-				if gridCopy[y][x] == lib.CharToByte("|") {
-					loopOpen = !loopOpen
-				} else if gridCopy[y][x] == lib.CharToByte("-") {
-					continue
-				} else if isCorner(string(gridCopy[y][x])) {
-					currentCorner := string(gridCopy[y][x])
-					if previousCorner == "" {
-						previousCorner = string(currentCorner)
-					} else {
-						if previousCorner == oppositeCorner(currentCorner) {
-							loopOpen = !loopOpen
-						}
-						previousCorner = ""
-					}
+			if isPartOfLoop[Coordinates{X: x, Y: y}] {
+				character := string(grid[y][x])
+				for _, direction := range characterFromMap[character] {
+					previousWalls[direction]++
+				}
+				if previousWalls["N"] == 1 && previousWalls["S"] == 1 {
+					wallsInFrontOfPoint++
+					previousWalls = resetPreviousWalls()
+				}
+				if previousWalls["S"] >= 2 || previousWalls["N"] >= 2 {
+					previousWalls = resetPreviousWalls()
 				}
 			} else {
-				if loopOpen {
-					gridCopy[y][x] = lib.CharToByte("I")
-					containedSpace += 1
+				if wallsInFrontOfPoint%2 == 1 {
+					containedSpace++
+					grid[y][x] = lib.CharToByte("I")
 				} else {
-					gridCopy[y][x] = lib.CharToByte("0")
+					grid[y][x] = lib.CharToByte("0")
 				}
 			}
 		}
 	}
 
-	// fmt.Println("New Grid:")
-	// printGrid(gridCopy)
-	// fmt.Println()
-
 	return containedSpace
 }
 
-func oppositeCorner(pipe string) string {
-	switch pipe {
-	case "L":
-		return "7"
-	case "J":
-		return "F"
-	case "F":
-		return "J"
-	case "7":
-		return "L"
-	default:
-		panic("Invalid pipe")
-	}
-}
-
-func isCorner(pipe string) bool {
-	return pipe == "L" || pipe == "J" || pipe == "F" || pipe == "7"
-}
-
-func printGrid(grid [][]byte) {
-	for y := range grid {
-		fmt.Println(string(grid[y]))
-	}
-}
-
 func main() {
-	// lib.AssertEqual(8, solvePart1(TestString))
-	// lib.AssertEqual(4, solvePart1(SmallTestString))
+	lib.AssertEqual(8, solvePart1(TestString))
+	lib.AssertEqual(4, solvePart1(SmallTestString))
 
 	lib.AssertEqual(4, solvePart2(Part2TestString1))
 	lib.AssertEqual(8, solvePart2(Part2TestString2))
