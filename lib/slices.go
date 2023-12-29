@@ -1,5 +1,7 @@
 package lib
 
+import "slices"
+
 func LastValue[T any](slice []T) T {
 	return slice[len(slice)-1]
 }
@@ -19,4 +21,18 @@ func FindIndex[T any](collection []T, comparison func(T) bool) int {
 		}
 	}
 	return -1
+}
+
+func ContainsSameElements[T comparable](a, b []T) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for _, value := range a {
+		if !slices.Contains(b, value) {
+			return false
+		}
+	}
+
+	return true
 }

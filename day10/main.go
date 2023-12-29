@@ -260,12 +260,6 @@ func resetPreviousWalls() map[string]int {
 	}
 }
 
-// func printGrid(grid [][]byte) {
-// 	for y := range grid {
-// 		fmt.Println(string(grid[y]))
-// 	}
-// }
-
 func solvePart2(input string) int {
 	grid := lib.StringToGrid(input)
 	var isPartOfLoop = map[Coordinates]bool{}
