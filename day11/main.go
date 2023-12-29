@@ -2,6 +2,7 @@ package main
 
 import (
 	"advent-of-code-2023/lib"
+	"fmt"
 	"slices"
 )
 
@@ -47,6 +48,7 @@ const DataFile string = "data.txt"
 */
 
 const EmptyChar = "."
+const GalaxyChar = "#"
 
 func expandEmptyRows(grid [][]byte) [][]byte {
 	y := 0
@@ -89,13 +91,53 @@ func expandEmptyColumnsAndRows(grid [][]byte) [][]byte {
 	return grid
 }
 
+type Coordinates struct {
+	X int
+	Y int
+}
+
+func galaxyCoordinates(grid [][]byte) (coordinates []Coordinates) {
+	for y := range grid {
+		for x := range grid[y] {
+			if grid[y][x] == lib.CharToByte(GalaxyChar) {
+				newCoordinate := Coordinates{x, y}
+				coordinates = append(coordinates, newCoordinate)
+			}
+		}
+	}
+	return
+}
+
+func distanceBetween(a, b Coordinates) int {
+	return absInt(a.X-b.X) + absInt(a.Y-b.Y)
+}
+
+func absInt(n int) int {
+	if n < 0 {
+		return -n
+	}
+	return n
+}
+
+func compareAllValues(collection []Coordinates, compare func(a, b Coordinates)) {
+	for i := 0; i < len(collection)-1; i++ {
+		for j := i + 1; j < len(collection); j++ {
+			compare(collection[i], collection[j])
+		}
+	}
+}
+
 func solvePart1(input string) int {
 	grid := lib.StringToGrid(input)
 	grid = expandEmptyColumnsAndRows(grid)
+	galaxies := galaxyCoordinates(grid)
 
-	lib.PrintGrid(grid)
+	totalDistance := 0
+	compareAllValues(galaxies, func(a, b Coordinates) {
+		totalDistance += distanceBetween(a, b)
+	})
 
-	return 0
+	return totalDistance
 }
 
 /*
@@ -109,7 +151,7 @@ func solvePart2(input string) int {
 
 func main() {
 	// Expanding works!
-	lib.AssertEqual(TestStringExpanded, lib.GridToString(expandEmptyColumnsAndRows(lib.StringToGrid(TestString))))
+	// lib.AssertEqual(TestStringExpanded, lib.GridToString(expandEmptyColumnsAndRows(lib.StringToGrid(TestString))))
 
 	lib.AssertEqual(374, solvePart1(TestString))
 
@@ -118,9 +160,9 @@ func main() {
 	// lib.AssertEqual(1, solvePart1(SmallTestString))
 	// lib.AssertEqual(1, solvePart2(SmallTestString))
 
-	// dataString := lib.GetDataString(DataFile)
-	// result1 := solvePart1(dataString)
-	// fmt.Println(result1)
+	dataString := lib.GetDataString(DataFile)
+	result1 := solvePart1(dataString)
+	fmt.Println(result1)
 
 	// dataString := lib.GetDataString(DataFile)
 	// result2 := solvePart2(dataString)
