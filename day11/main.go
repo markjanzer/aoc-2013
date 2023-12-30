@@ -2,7 +2,6 @@ package main
 
 import (
 	"advent-of-code-2023/lib"
-	"fmt"
 	"slices"
 )
 
@@ -69,15 +68,7 @@ func rowIsEmpty(row []byte) bool {
 }
 
 func emptyRow(length int) []byte {
-	return makeSlice(length, lib.CharToByte("."))
-}
-
-func makeSlice(length int, value byte) []byte {
-	slice := make([]byte, length)
-	for i := range slice {
-		slice[i] = value
-	}
-	return slice
+	return lib.MakeSlice(length, lib.CharToByte("."))
 }
 
 func expandEmptyColumnsAndRows(grid [][]byte) [][]byte {
@@ -109,44 +100,80 @@ func galaxyCoordinates(grid [][]byte) (coordinates []Coordinates) {
 }
 
 func distanceBetween(a, b Coordinates) int {
-	return absInt(a.X-b.X) + absInt(a.Y-b.Y)
+	return lib.AbsInt(a.X-b.X) + lib.AbsInt(a.Y-b.Y)
 }
 
-func absInt(n int) int {
-	if n < 0 {
-		return -n
+func expandedGalaxies(galaxies []Coordinates, gridWidth, gridHeight int, expansionFactor int) []Coordinates {
+	spaceToAdd := expansionFactor - 1 // 1 * 100 = 1 + (100 - 1)
+	xValues := lib.Map(galaxies, func(coordinates Coordinates) int {
+		return coordinates.X
+	})
+	xGaps := lib.SliceDifference[int](lib.CreateRange(0, gridWidth-1), xValues)
+	for i := len(xGaps) - 1; i >= 0; i-- {
+		galaxies = lib.Map(galaxies, func(oldCoordinates Coordinates) Coordinates {
+			if oldCoordinates.X > xGaps[i] {
+				return Coordinates{oldCoordinates.X + spaceToAdd, oldCoordinates.Y}
+			} else {
+				return oldCoordinates
+			}
+		})
 	}
-	return n
-}
 
-func compareAllValues(collection []Coordinates, compare func(a, b Coordinates)) {
-	for i := 0; i < len(collection)-1; i++ {
-		for j := i + 1; j < len(collection); j++ {
-			compare(collection[i], collection[j])
-		}
+	yValues := lib.Map(galaxies, func(coordinates Coordinates) int {
+		return coordinates.Y
+	})
+	yGaps := lib.SliceDifference[int](lib.CreateRange(0, gridHeight-1), yValues)
+	for i := len(yGaps) - 1; i >= 0; i-- {
+		galaxies = lib.Map(galaxies, func(oldCoordinates Coordinates) Coordinates {
+			if oldCoordinates.Y > yGaps[i] {
+				return Coordinates{oldCoordinates.X, oldCoordinates.Y + spaceToAdd}
+			} else {
+				return oldCoordinates
+			}
+		})
 	}
+
+	return galaxies
 }
 
-func solvePart1(input string) int {
+func combinedGalaxyDistances(input string, expansionFactor int) int {
 	grid := lib.StringToGrid(input)
-	grid = expandEmptyColumnsAndRows(grid)
 	galaxies := galaxyCoordinates(grid)
+	gridWidth := len(grid[0])
+	gridHeight := len(grid)
+
+	galaxies = expandedGalaxies(galaxies, gridWidth, gridHeight, expansionFactor)
 
 	totalDistance := 0
-	compareAllValues(galaxies, func(a, b Coordinates) {
+	lib.CompareAllValues(galaxies, func(a, b Coordinates) {
 		totalDistance += distanceBetween(a, b)
 	})
 
 	return totalDistance
 }
 
+func solvePart1(input string) int {
+	return combinedGalaxyDistances(input, 2)
+}
+
 /*
 	Part 2 Notes
+
+	Alright, we're going to need a different strategy here.
+	Instead of actually expanding the map here's what we're going to do.
+	We're going to take the initial map and get the galaxies from it.
+	Then we're going to iterate over the X values of the galaxies, and note any time there is a gap.
+	Then we're going to increase the X values of all galaxies that are beyond that gap, as well as all of the gaps that are beyond it.
+	Actually if we go over this backwards then we don't have to worry about expanding gaps.
+
+	We're going to do the same thing for Y, then we're going to do the same distance calculation.
+
+	For the first step, let's rewrite the first part to work this way.
 
 */
 
 func solvePart2(input string) int {
-	return 0
+	return combinedGalaxyDistances(input, 1_000_000)
 }
 
 func main() {
@@ -154,17 +181,16 @@ func main() {
 	// lib.AssertEqual(TestStringExpanded, lib.GridToString(expandEmptyColumnsAndRows(lib.StringToGrid(TestString))))
 
 	lib.AssertEqual(374, solvePart1(TestString))
-
-	// lib.AssertEqual(1, solvePart2(TestString))
-
-	// lib.AssertEqual(1, solvePart1(SmallTestString))
-	// lib.AssertEqual(1, solvePart2(SmallTestString))
+	lib.AssertEqual(1030, combinedGalaxyDistances(TestString, 10))
+	lib.AssertEqual(8410, combinedGalaxyDistances(TestString, 100))
 
 	dataString := lib.GetDataString(DataFile)
 	result1 := solvePart1(dataString)
-	fmt.Println(result1)
+	lib.AssertEqual(9742154, result1)
+	// fmt.Println(result1)
 
 	// dataString := lib.GetDataString(DataFile)
-	// result2 := solvePart2(dataString)
+	result2 := solvePart2(dataString)
+	lib.AssertEqual(411142919886, result2)
 	// fmt.Println(result2)
 }
