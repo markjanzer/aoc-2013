@@ -27,6 +27,7 @@ func FindIndex[T any](collection []T, comparison func(T) bool) int {
 	return -1
 }
 
+// Checks whether two slices contain the same elements, regardless of order and duplicates
 func ContainsSameElements[T comparable](a, b []T) bool {
 	if len(a) != len(b) {
 		return false
@@ -34,6 +35,21 @@ func ContainsSameElements[T comparable](a, b []T) bool {
 
 	for _, value := range a {
 		if !slices.Contains(b, value) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Checks whether two slices contain the same elements in the same order
+func EqualSlices[T comparable](a, b []T) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i, value := range a {
+		if value != b[i] {
 			return false
 		}
 	}
