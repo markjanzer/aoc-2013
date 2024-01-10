@@ -35,76 +35,73 @@ const DataFile string = "data.txt"
 
 */
 
-func getRowAndGroups(input string) ([]byte, []int) {
+// Takes a line and returns a map of the springs, and a log of the contiguous damaged springs
+func getMapAndLog(input string) ([]byte, []int) {
 	parts := strings.Split(input, " ")
-	row := []byte(parts[0])
-	groups := lib.Map(strings.Split(parts[1], ","), func(item string) int {
+	springsMap := []byte(parts[0])
+	damagedSpringsLog := lib.Map(strings.Split(parts[1], ","), func(item string) int {
 		num, _ := strconv.Atoi(item)
 		return num
 	})
 
-	fmt.Println("groups: ", groups)
-
-	return row, groups
+	return springsMap, damagedSpringsLog
 }
 
-func solve(row []byte, groups []int) int {
-	printByteSlice(row)
-
+func solve(springsMap []byte, groups []int) int {
 	// Break early if there are more damaged springs than the groups allow
-	expectedDamagedSprings := lib.Sum(groups...)
-	damagedSprings := lib.Filter(row, func(char byte) bool {
+	numberOfDamagedSprings := lib.Sum(groups...)
+	damagedSprings := lib.Filter(springsMap, func(char byte) bool {
 		return char == lib.CharToByte("#")
 	})
 
-	if len(damagedSprings) > expectedDamagedSprings {
+	if len(damagedSprings) > numberOfDamagedSprings {
 		return 0
 	}
 
 	// For each unknown spring, replace it with a damaged and undamaged spring and then run solve on those
-	for i, char := range row {
+	for i, char := range springsMap {
 		if char == lib.CharToByte("?") {
-			undamagedSpring := make([]byte, len(row))
-			copy(undamagedSpring, row)
-			undamagedSpring[i] = lib.CharToByte(".")
+			mapWithUndamagedSpring := make([]byte, len(springsMap))
+			copy(mapWithUndamagedSpring, springsMap)
+			mapWithUndamagedSpring[i] = lib.CharToByte(".")
 
-			damagedSpring := make([]byte, len(row))
-			copy(damagedSpring, row)
-			damagedSpring[i] = lib.CharToByte("#")
+			mapWithDamagedSpring := make([]byte, len(springsMap))
+			copy(mapWithDamagedSpring, springsMap)
+			mapWithDamagedSpring[i] = lib.CharToByte("#")
 
-			return solve(undamagedSpring, groups) + solve(damagedSpring, groups)
+			return solve(mapWithUndamagedSpring, groups) + solve(mapWithDamagedSpring, groups)
 		}
 	}
 
-	if rowMatchesPattern(row, groups) {
+	if springsMapMatchesPattern(springsMap, groups) {
 		return 1
 	}
 
 	return 0
 }
 
-func generatePatternForRow(row []byte) (pattern []int) {
+func generateSpringsLogForMap(springsMap []byte) (springsLog []int) {
 	currentRange := 0
-	for _, b := range row {
+	for _, b := range springsMap {
 		if string(b) == "#" {
 			currentRange++
 		} else {
 			if currentRange != 0 {
-				pattern = append(pattern, currentRange)
+				springsLog = append(springsLog, currentRange)
 			}
 			currentRange = 0
 		}
 	}
 
 	if currentRange != 0 {
-		pattern = append(pattern, currentRange)
+		springsLog = append(springsLog, currentRange)
 	}
 
 	return
 }
 
-func rowMatchesPattern(row []byte, pattern []int) bool {
-	return lib.EqualSlices(generatePatternForRow(row), pattern)
+func springsMapMatchesPattern(springsMap []byte, springsLog []int) bool {
+	return lib.EqualSlices(generateSpringsLogForMap(springsMap), springsLog)
 }
 
 func printByteSlice(b []byte) {
@@ -118,7 +115,7 @@ func printByteSlice(b []byte) {
 func solvePart1(input string) (sum int) {
 	lines := strings.Split(input, "\n")
 	for _, line := range lines {
-		row, groups := getRowAndGroups(line)
+		row, groups := getMapAndLog(line)
 		sum += solve(row, groups)
 	}
 	return
@@ -126,6 +123,14 @@ func solvePart1(input string) (sum int) {
 
 /*
 	Part 2 Notes
+
+	Make part 1 more efficient
+	Okay there are two steps to this. Get a new getMapAndLog method that multiplies the results by 5
+
+	How do I make part 1 more efficient?
+	First off let's get some better naming to make this simpler. I like calling one part the map, and the other the
+	log. Like logOfContiguousDamagedSprings.
+
 
 */
 
@@ -135,11 +140,11 @@ func solvePart2(input string) int {
 
 func main() {
 	lib.AssertEqual(21, solvePart1(TestString))
-	// lib.AssertEqual(21, solvePart2(TestString))
+	// lib.AssertEqual(525152, solvePart2(TestString))
 
-	// dataString := lib.GetDataString(DataFile)
-	// result1 := solvePart1(dataString)
-	// fmt.Println(result1)
+	dataString := lib.GetDataString(DataFile)
+	result1 := solvePart1(dataString)
+	fmt.Println(result1)
 
 	// dataString := lib.GetDataString(DataFile)
 	// result2 := solvePart2(dataString)
