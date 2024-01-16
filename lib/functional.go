@@ -42,3 +42,12 @@ func All[T any](collection []T, eval func(item T) bool) bool {
 	}
 	return true
 }
+
+func Any[T any](collection []T, eval func(item T) bool) bool {
+	for _, item := range collection {
+		if eval(item) {
+			return true
+		}
+	}
+	return false
+}

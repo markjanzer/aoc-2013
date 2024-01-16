@@ -106,3 +106,11 @@ func CreateRange(start, end int) []int {
 	}
 	return slice
 }
+
+func MultiplySlice[T any](slice []T, multiplier int) []T {
+	result := []T{}
+	for i := 0; i < multiplier; i++ {
+		result = append(result, slice...)
+	}
+	return result
+}
