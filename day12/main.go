@@ -49,28 +49,22 @@ func getMapAndLog(input string) ([]byte, []int) {
 }
 
 var cache map[string]int = make(map[string]int)
-var solveCount int = 0
-var solveIterationsCount int = 0
 
 func serialize(springsMap []byte, damagedSpringsCount int, groups []int) string {
-	return string(springsMap) + ":" + string(damagedSpringsCount) + ":" + strings.Join(lib.Map(groups, func(item int) string {
+	return string(springsMap) + ":" + fmt.Sprint(damagedSpringsCount) + ":" + strings.Join(lib.Map(groups, func(item int) string {
 		return strconv.Itoa(item)
-	}), "")
+	}), ",")
 }
 
-func cacheSolve(springsMap []byte, damagedSpringsCount int, groups []int) int {
+func solveWithCache(springsMap []byte, damagedSpringsCount int, groups []int) int {
 	serialized := serialize(springsMap, damagedSpringsCount, groups)
 	if _, ok := cache[serialized]; !ok {
-		cache[serialized] = solve2(springsMap, damagedSpringsCount, groups)
+		cache[serialized] = solve(springsMap, damagedSpringsCount, groups)
 	}
 	return cache[serialized]
 }
 
-func solve2(springsMap []byte, damagedSpringsCount int, groups []int) int {
-	// printByteSlice(springsMap)
-	// fmt.Println(groups)
-	solveCount++
-
+func solve(springsMap []byte, damagedSpringsCount int, groups []int) int {
 	if len(groups) == 0 {
 		if hasDamagedSpring(springsMap) {
 			return 0
@@ -89,7 +83,7 @@ func solve2(springsMap []byte, damagedSpringsCount int, groups []int) int {
 		solveIterationsCount++
 		if string(b) == "." && damagedSpringsCount > 0 {
 			if damagedSpringsCount == contiguousDamagedSprings {
-				return cacheSolve(springsMap[(i+1):], 0, groups[1:])
+				return solveWithCache(springsMap[(i+1):], 0, groups[1:])
 			} else {
 				return 0
 			}
@@ -98,12 +92,12 @@ func solve2(springsMap []byte, damagedSpringsCount int, groups []int) int {
 		} else if string(b) == "?" {
 			mapWithUndamagedSpring := append([]byte{lib.CharToByte(".")}, springsMap[i+1:]...)
 			mapWithDamagedSpring := append([]byte{lib.CharToByte("#")}, springsMap[i+1:]...)
-			return cacheSolve(mapWithUndamagedSpring, damagedSpringsCount, groups) + cacheSolve(mapWithDamagedSpring, damagedSpringsCount, groups)
+			return solveWithCache(mapWithUndamagedSpring, damagedSpringsCount, groups) + solveWithCache(mapWithDamagedSpring, damagedSpringsCount, groups)
 		}
 	}
 
 	if damagedSpringsCount == contiguousDamagedSprings {
-		return cacheSolve([]byte{}, 0, groups[1:])
+		return solveWithCache([]byte{}, 0, groups[1:])
 	} else {
 		return 0
 	}
@@ -115,19 +109,11 @@ func hasDamagedSpring(springsMap []byte) bool {
 	})
 }
 
-func printByteSlice(b []byte) {
-	var stringsSlice []string
-	for _, byteVal := range b {
-		stringsSlice = append(stringsSlice, string(byteVal))
-	}
-	fmt.Println(stringsSlice)
-}
-
 func solvePart1(input string) (sum int) {
 	lines := strings.Split(input, "\n")
 	for _, line := range lines {
 		row, groups := getMapAndLog(line)
-		sum += cacheSolve(row, 0, groups)
+		sum += solveWithCache(row, 0, groups)
 	}
 	return
 }
@@ -145,8 +131,6 @@ func solvePart1(input string) (sum int) {
 	Okay instead of creating all of the possible maps and then comparing them to the log,
 	let's iterate through the maps, but shorten the map and log when possible. Return 0 when it breaks or doesn't match
 	and then return 1 when they are both empty.
-
-
 */
 
 func multiplyRowsAndGroups(multiplier int, springsMap []byte, springsLog []int) (newSpringsMap []byte, newSpringsLog []int) {
@@ -166,7 +150,7 @@ const FoldMultiplier int = 5
 func solveLine2(line string) int {
 	springsMap, springsLog := getMapAndLog(line)
 	springsMap, springsLog = multiplyRowsAndGroups(FoldMultiplier, springsMap, springsLog)
-	return cacheSolve(springsMap, 0, springsLog)
+	return solveWithCache(springsMap, 0, springsLog)
 }
 
 func solvePart2(input string) (sum int) {
@@ -181,22 +165,20 @@ func solvePart2(input string) (sum int) {
 
 func main() {
 	// lib.AssertEqual(21, solvePart1(TestString))
-
 	// lib.AssertEqual(1, solveLine2(SmallTest1))
 	// lib.AssertEqual(16384, solveLine2(SmallTest2))
 	// lib.AssertEqual(1, solveLine2(SmallTest3))
 	// lib.AssertEqual(16, solveLine2(SmallTest4))
 
-	// lib.AssertEqual(525152, solvePart2(TestString))
-
-	dataString := lib.GetDataString(DataFile)
-	result1 := solvePart1(dataString)
-	fmt.Println(result1)
+	// This was breaking because my serialization wasn't separating numbers with commas
+	// so 1,1 was being treated as 11 and vice versa
+	// lib.AssertEqual(1, solvePart1("#?#??..?.#?????#???# 1,1,1,1,11"))
 
 	// dataString := lib.GetDataString(DataFile)
-	// result2 := solvePart2(dataString)
-	// fmt.Println(result2)
+	// result1 := solvePart1(dataString)
+	// fmt.Println(result1)
 
-	// fmt.Println("solveCount: ", solveCount)
-	// fmt.Println("solveIterationsCount: ", solveIterationsCount)
+	dataString := lib.GetDataString(DataFile)
+	result2 := solvePart2(dataString)
+	fmt.Println(result2)
 }
