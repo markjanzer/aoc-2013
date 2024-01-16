@@ -5,9 +5,9 @@ import (
 	"testing"
 )
 
-func BenchmarkSolvePart1(b *testing.B) {
+func BenchmarkSolvePart2(b *testing.B) {
 	dataString := lib.GetDataString(DataFile)
 	for i := 0; i < b.N; i++ {
-		solvePart1(dataString)
+		solvePart2(dataString)
 	}
 }
