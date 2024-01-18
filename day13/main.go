@@ -115,18 +115,6 @@ func horizontalSymmetryAfterRow(grid [][]byte) int {
 	when checking for reflection.
 */
 
-// type SymmetryDirection string
-
-// const (
-// 	Vertical   SymmetryDirection = "Vertical"
-// 	Horizontal SymmetryDirection = "Horizontal"
-// )
-
-// type SymmetryInfo struct {
-// 	Direction SymmetryDirection
-// 	Index     int
-// }
-
 func solvePart2ForGrid(input string) int {
 	grid := lib.StringToGrid(input)
 
@@ -136,20 +124,14 @@ func solvePart2ForGrid(input string) int {
 	alteredVerticalSymmetry := 0
 
 	if horizontalSymmetry != 0 {
-		fmt.Println("horizontal")
 		alteredHorizontalSymmetry = alteredHorizontalSymmetryAfterRow(grid, horizontalSymmetry)
-		fmt.Println("vertical")
 		alteredVerticalSymmetry = alteredVerticalSymmetryAfterColumn(grid, -1)
 	} else if verticalSymmetry != 0 {
-		fmt.Println("horizontal")
 		alteredHorizontalSymmetry = alteredHorizontalSymmetryAfterRow(grid, -1)
-		fmt.Println("vertical")
 		alteredVerticalSymmetry = alteredVerticalSymmetryAfterColumn(grid, verticalSymmetry)
 	} else {
 		panic("No original symmetry found")
 	}
-
-	fmt.Println(horizontalSymmetry, verticalSymmetry, alteredHorizontalSymmetry, alteredVerticalSymmetry)
 
 	return (100 * alteredHorizontalSymmetry) + alteredVerticalSymmetry
 }
@@ -168,9 +150,6 @@ func alteredHorizontalSymmetryAfterRow(grid [][]byte, originalSymmetry int) int 
 		// Continue if symmetry is not found
 		prev := i - 1
 		currentDifference := differenceBetweenSlices(grid[i], grid[prev])
-		fmt.Println(sliceOfBytesToStrings(grid[prev]))
-		fmt.Println(sliceOfBytesToStrings(grid[i]))
-		fmt.Println(currentDifference)
 		if currentDifference > 1 {
 			continue
 		}
@@ -214,14 +193,6 @@ func solvePart2(input string) (sum int) {
 	}
 
 	return
-}
-
-func sliceOfBytesToStrings(input []byte) []string {
-	var output []string
-	for _, b := range input {
-		output = append(output, string(b))
-	}
-	return output
 }
 
 func main() {
