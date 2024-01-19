@@ -2,7 +2,6 @@ package main
 
 import (
 	"advent-of-code-2023/lib"
-	"fmt"
 )
 
 const SmallTestString string = ``
@@ -61,12 +60,8 @@ const DataFile string = "data.txt"
 */
 
 func solvePart1(input string) int {
-
 	grid := lib.StringToGrid(input)
-	lib.PrintGrid(grid)
-	fmt.Println()
 	grid = shiftNorth(grid)
-	lib.PrintGrid(grid)
 
 	return countPoints(grid)
 }
@@ -92,35 +87,6 @@ func shiftNorth(grid [][]byte) [][]byte {
 	return grid
 }
 
-// func shiftNorth(grid [][]byte) [][]byte {
-// 	grid = lib.FlipGrid(grid)
-// 	grid = shiftWest(grid)
-// 	grid = lib.FlipGrid(grid)
-
-// 	return grid
-// }
-
-// func shiftWest(grid [][]byte) [][]byte {
-// 	for y := range grid {
-// 		block := -1
-// 		for x := range grid[y] {
-// 			if grid[y][x] == '#' {
-// 				block = x
-// 			} else if grid[y][x] == 'O' {
-// 				if block < x {
-// 					grid[y][x] = '.'
-// 					grid[y][block+1] = 'O'
-// 					block++
-// 				} else {
-// 					block = x
-// 				}
-// 			}
-// 		}
-// 	}
-
-// 	return grid
-// }
-
 func countPoints(grid [][]byte) int {
 	points := 0
 	gridHeight := len(grid)
@@ -143,59 +109,28 @@ func countPoints(grid [][]byte) int {
 
 	We'll do cycles and compare it to the previous result until it settles.
 
-	Then we'll once again calculate points.
+	It does seem like it permanently settles, but rather oscilates between a couple of states
+
+	We'll start by serializing the grids
+	Then we'll save the results of cycles in a map (with the serialized value as the key and the cycle number as the value)
+	When we find a duplicate result, we'll calculate the difference to determine if there is a consistent
+	cycle it reappears with and see if 1_000_000_000 appears in that cycle. If it does, then calculate the result for the grid
 */
-
-// func cycleGrid(grid [][]byte) [][]byte {
-// 	// North
-// 	grid = lib.FlipGrid(grid)
-// 	grid = shiftWest(grid)
-// 	// West
-// 	grid = lib.FlipGrid(grid)
-// 	grid = shiftWest(grid)
-// 	// South
-// 	grid = lib.FlipGrid(grid)
-// 	grid = lib.ReverseGrid(grid)
-// 	grid = shiftWest(grid)
-// 	// East
-// 	grid = lib.FlipGrid(grid)
-// 	grid = shiftWest(grid)
-// 	// Restore grid
-// 	grid = lib.ReverseGrid(grid)
-
-// 	return grid
-// }
 
 func cycleGrid(grid [][]byte) [][]byte {
 	grid = shiftNorth(grid)
-	grid = rotateGrid(grid, counterClockwise)
+	grid = rotateGrid(grid)
 	grid = shiftNorth(grid)
-	grid = rotateGrid(grid, counterClockwise)
+	grid = rotateGrid(grid)
 	grid = shiftNorth(grid)
-	grid = rotateGrid(grid, counterClockwise)
+	grid = rotateGrid(grid)
 	grid = shiftNorth(grid)
-	grid = rotateGrid(grid, counterClockwise)
+	grid = rotateGrid(grid)
 	return grid
 }
 
-// func shiftSouth(grid [][]byte) [][]byte {
-// 	grid = lib.FlipGrid(grid)
-// 	grid = lib.ReverseGrid(grid)
-// 	grid = shiftWest(grid)
-// 	grid = lib.ReverseGrid(grid)
-// 	grid = lib.FlipGrid(grid)
-// 	return grid
-// }
-
-// func shiftEast(grid [][]byte) [][]byte {
-// 	grid = lib.ReverseGrid(grid)
-// 	grid = shiftWest(grid)
-// 	grid = lib.ReverseGrid(grid)
-// 	return grid
-// }
-
 // Rotates grid 90 degrees counter-clockwise
-func rotateGrid(grid [][]byte, direction string) [][]byte {
+func rotateGrid(grid [][]byte) [][]byte {
 	xLen := len(grid[0])
 	yLen := len(grid)
 
@@ -206,69 +141,45 @@ func rotateGrid(grid [][]byte, direction string) [][]byte {
 
 	for y := 0; y < yLen; y++ {
 		for x := 0; x < xLen; x++ {
-			if direction == "cc" {
-				newGrid[x][yLen-1-y] = grid[y][x]
-			} else if direction == "c" {
-				newGrid[xLen-1-x][y] = grid[y][x]
-			}
+			newGrid[x][yLen-1-y] = grid[y][x]
 		}
 	}
 
 	return newGrid
 }
 
-func solvePart2(input string) int {
-	grid := lib.StringToGrid(input)
-	lib.PrintGrid(grid)
-	fmt.Println()
-
-	return 0
+func serialize(grid [][]byte) string {
+	return lib.GridToString(grid)
 }
 
-const clockwise = "c"
-const counterClockwise = "cc"
+func solvePart2(input string) int {
+	gridMap := make(map[string]int)
+	grid := lib.StringToGrid(input)
+
+	cycle := 0
+	for cycle < 10000 {
+		grid = cycleGrid(grid)
+		cycle++
+
+		serializedGrid := serialize(grid)
+
+		if _, ok := gridMap[serializedGrid]; ok {
+			previousCycle := gridMap[serializedGrid]
+			period := cycle - previousCycle
+			if (1_000_000_000-previousCycle)%period == 0 {
+				return countPoints(grid)
+			}
+		}
+
+		gridMap[serializedGrid] = cycle
+	}
+
+	panic("No solution found")
+}
 
 func main() {
-	// lib.AssertEqual(136, solvePart1(TestString))
-	// lib.AssertEqual(136, solvePart1(TestString))
-	// lib.AssertEqual(1, solvePart2(TestString))
-
-	// 	numbers := `123
-	// 456
-	// 789`
-	// 	numGrid := lib.StringToGrid(numbers)
-	// 	lib.PrintGrid(numGrid)
-	// 	fmt.Println()
-	// 	numGrid = rotateGrid(numGrid, clockwise)
-	// 	lib.PrintGrid(numGrid)
-	// 	fmt.Println()
-	// 	numGrid = rotateGrid(numGrid, clockwise)
-	// 	numGrid = rotateGrid(numGrid, counterClockwise)
-	// 	lib.PrintGrid(numGrid)
-
-	grid := lib.StringToGrid(TestString)
-	// cycledGrid := cycleGrid(grid)
-	// expectedGrid := lib.StringToGrid(CycledTestString)
-
-	i := 0
-	for i < 10000 {
-		grid = cycleGrid(grid)
-		i++
-	}
-	lib.PrintGrid(grid)
-	fmt.Println()
-
-	i = 0
-	for i < 1000 {
-		grid = cycleGrid(grid)
-		i++
-	}
-	lib.PrintGrid(grid)
-
-	// fmt.Println(lib.GridAreEqual(cycledGrid, expectedGrid))
-
-	// lib.AssertEqual(1, solvePart1(SmallTestString))
-	// lib.AssertEqual(1, solvePart2(SmallTestString))
+	lib.AssertEqual(136, solvePart1(TestString))
+	lib.AssertEqual(64, solvePart2(TestString))
 
 	// dataString := lib.GetDataString(DataFile)
 	// result1 := solvePart1(dataString)

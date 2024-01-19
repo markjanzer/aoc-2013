@@ -33,6 +33,7 @@ func PrintGrid(grid [][]byte) {
 	}
 }
 
+// Flips the x and y axis of a grid
 func FlipGrid(grid [][]byte) [][]byte {
 	// Dimensions of the original grid
 	x := len(grid[0])
@@ -52,4 +53,26 @@ func FlipGrid(grid [][]byte) [][]byte {
 	}
 
 	return newGrid
+}
+
+func ReverseGrid(grid [][]byte) [][]byte {
+	for i := range grid {
+		grid[i] = ReverseSlice(grid[i])
+	}
+
+	return grid
+}
+
+func GridAreEqual(grid1, grid2 [][]byte) bool {
+	if len(grid1) != len(grid2) {
+		return false
+	}
+
+	for i := range grid1 {
+		if !EqualSlices(grid1[i], grid2[i]) {
+			return false
+		}
+	}
+
+	return true
 }

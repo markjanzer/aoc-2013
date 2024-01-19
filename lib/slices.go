@@ -114,3 +114,11 @@ func MultiplySlice[T any](slice []T, multiplier int) []T {
 	}
 	return result
 }
+
+func ReverseSlice[T any](slice []T) []T {
+	result := make([]T, len(slice))
+	for i := range slice {
+		result[len(slice)-i-1] = slice[i]
+	}
+	return result
+}

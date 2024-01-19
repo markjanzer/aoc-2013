@@ -19,8 +19,3 @@ func ByteIsGear(b byte) bool {
 func CharToByte(char string) byte {
 	return []byte(char)[0]
 }
-
-// Probably don't need this
-func ByteToChar(b byte) string {
-	return string(b)
-}
