@@ -122,3 +122,7 @@ func ReverseSlice[T any](slice []T) []T {
 	}
 	return result
 }
+
+func RemoveIndex[T any](slice []T, index int) []T {
+	return append(slice[:index], slice[index+1:]...)
+}
