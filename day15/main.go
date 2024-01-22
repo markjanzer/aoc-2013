@@ -52,10 +52,6 @@ func solvePart1(input string) int {
 /*
 	Part 2 Notes
 
-	Okay so first create a hash map that has numbers as the keys and arrays as the value
-	Hmm I need to think about what the
-
-
 */
 
 type lens struct {
@@ -69,12 +65,6 @@ type instruction struct {
 	operation   string
 }
 
-// func (ins instruction) boxNumber() int {
-// 	return hashString(ins.label)
-// }
-
-// var hashMap map[int][]lens
-
 func parseInstruction(input string) instruction {
 	if input[len(input)-1] == '-' {
 		label := input[:len(input)-1]
@@ -87,7 +77,7 @@ func parseInstruction(input string) instruction {
 	return instruction{label, focalLength, "="}
 }
 
-func solvePart2(input string) int {
+func initializeHashMap() map[int][]lens {
 	hashMap := make(map[int][]lens)
 
 	// Populate the map with keys from 0 to 255
@@ -95,32 +85,33 @@ func solvePart2(input string) int {
 		hashMap[i] = []lens{}
 	}
 
-	inputs := strings.Split(input, ",")
+	return hashMap
+}
 
-	for _, value := range inputs {
-		instruction := parseInstruction(value)
-		boxNumber := hashString(instruction.label)
+func applyToHashMap(hashMap map[int][]lens, input string) {
+	instruction := parseInstruction(input)
+	boxNumber := hashString(instruction.label)
 
-		if instruction.operation == "-" {
-			indexOfLabel := lib.FindIndex(hashMap[boxNumber], func(lens lens) bool {
-				return lens.label == instruction.label
-			})
-			if indexOfLabel != -1 {
-				hashMap[boxNumber] = lib.RemoveIndex(hashMap[boxNumber], indexOfLabel)
-			}
-		} else if instruction.operation == "=" {
-			indexOfLabel := lib.FindIndex(hashMap[boxNumber], func(lens lens) bool {
-				return lens.label == instruction.label
-			})
-			if indexOfLabel != -1 {
-				hashMap[boxNumber][indexOfLabel] = lens{instruction.label, instruction.focalLength}
-			} else {
-				hashMap[boxNumber] = append(hashMap[boxNumber], lens{instruction.label, instruction.focalLength})
-			}
+	if instruction.operation == "-" {
+		indexOfLabel := lib.FindIndex(hashMap[boxNumber], func(lens lens) bool {
+			return lens.label == instruction.label
+		})
+		if indexOfLabel != -1 {
+			hashMap[boxNumber] = lib.RemoveIndex(hashMap[boxNumber], indexOfLabel)
+		}
+	} else if instruction.operation == "=" {
+		indexOfLabel := lib.FindIndex(hashMap[boxNumber], func(lens lens) bool {
+			return lens.label == instruction.label
+		})
+		if indexOfLabel != -1 {
+			hashMap[boxNumber][indexOfLabel] = lens{instruction.label, instruction.focalLength}
+		} else {
+			hashMap[boxNumber] = append(hashMap[boxNumber], lens{instruction.label, instruction.focalLength})
 		}
 	}
+}
 
-	sum := 0
+func scoreHashMap(hashMap map[int][]lens) (sum int) {
 	i := 0
 	for i < 256 {
 		for j, lens := range hashMap[i] {
@@ -128,8 +119,19 @@ func solvePart2(input string) int {
 		}
 		i++
 	}
+	return
+}
 
-	return sum
+func solvePart2(input string) int {
+	hashMap := initializeHashMap()
+
+	inputs := strings.Split(input, ",")
+
+	for _, value := range inputs {
+		applyToHashMap(hashMap, value)
+	}
+
+	return scoreHashMap(hashMap)
 }
 
 func main() {
