@@ -164,16 +164,16 @@ func laser(grid [][]byte, energizedTiles map[string]map[string]bool, direction s
 	}
 }
 
+func numberOfEnergizedTiles(grid [][]byte, startingDirection string, startingCoordinatees coordinates) int {
+	energizedTiles := make(map[string]map[string]bool)
+	laser(grid, energizedTiles, startingDirection, startingCoordinatees)
+	return len(energizedTiles)
+}
+
 func solvePart1(input string) int {
 	grid := lib.StringToGrid(input)
-	energizedTiles := make(map[string]map[string]bool)
 
-	direction := "E"
-	coordinates := coordinates{0, 0}
-
-	laser(grid, energizedTiles, direction, coordinates)
-
-	return len(energizedTiles)
+	return numberOfEnergizedTiles(grid, "E", coordinates{0, 0})
 }
 
 /*
@@ -181,14 +181,46 @@ func solvePart1(input string) int {
 
 */
 
+type directionAndCoordinates struct {
+	direction   string
+	coordinates coordinates
+}
+
+func possibleStarts(grid [][]byte) []directionAndCoordinates {
+	result := []directionAndCoordinates{}
+
+	for y := range grid {
+		result = append(result, directionAndCoordinates{"E", coordinates{0, y}})
+		result = append(result, directionAndCoordinates{"W", coordinates{len(grid[0]) - 1, y}})
+	}
+
+	for x := range grid[0] {
+		result = append(result, directionAndCoordinates{"S", coordinates{x, 0}})
+		result = append(result, directionAndCoordinates{"N", coordinates{x, len(grid) - 1}})
+	}
+
+	return result
+}
+
 func solvePart2(input string) int {
-	return 0
+	grid := lib.StringToGrid(input)
+
+	possibleStarts := possibleStarts(grid)
+
+	max := 0
+	for _, start := range possibleStarts {
+		result := numberOfEnergizedTiles(grid, start.direction, start.coordinates)
+		if result > max {
+			max = result
+		}
+	}
+
+	return max
 }
 
 func main() {
 	lib.AssertEqual(46, solvePart1(TestString))
-
-	// lib.AssertEqual(1, solvePart2(TestString))
+	lib.AssertEqual(51, solvePart2(TestString))
 
 	// lib.AssertEqual(1, solvePart1(SmallTestString))
 	// lib.AssertEqual(1, solvePart2(SmallTestString))
@@ -197,7 +229,7 @@ func main() {
 	// result1 := solvePart1(dataString)
 	// fmt.Println(result1)
 
-	// dataString := lib.GetDataString(DataFile)
-	// result2 := solvePart2(dataString)
-	// fmt.Println(result2)
+	dataString := lib.GetDataString(DataFile)
+	result2 := solvePart2(dataString)
+	fmt.Println(result2)
 }
