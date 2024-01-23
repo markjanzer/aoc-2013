@@ -46,7 +46,7 @@ type coordinates struct {
 }
 
 func serialize(coordinates coordinates) string {
-	return string(coordinates.x) + "," + string(coordinates.y)
+	return fmt.Sprint(coordinates.x) + "," + fmt.Sprint(coordinates.y)
 }
 
 func transformDirection(direction, tile string) []string {
@@ -129,15 +129,35 @@ func coordinatesOutOfGrid(grid [][]byte, coordinates coordinates) bool {
 	return coordinates.x < 0 || coordinates.y < 0 || coordinates.x >= len(grid[0]) || coordinates.y >= len(grid)
 }
 
-func laser(grid [][]byte, energizedTiles map[string]bool, direction string, coordinates coordinates) {
+// Updates energizedTiles to include new coordinates/direction, and returns whether this is already in the cache
+func checkCache(energizedTiles map[string]map[string]bool, direction string, coordinates coordinates) bool {
+	serializedCoordinates := serialize(coordinates)
+
+	if _, exists := energizedTiles[serializedCoordinates]; !exists {
+		energizedTiles[serializedCoordinates] = make(map[string]bool)
+	}
+
+	if energizedTiles[serializedCoordinates][direction] {
+		return true
+	} else {
+		energizedTiles[serializedCoordinates][direction] = true
+		return false
+	}
+}
+
+func laser(grid [][]byte, energizedTiles map[string]map[string]bool, direction string, coordinates coordinates) {
 	if coordinatesOutOfGrid(grid, coordinates) {
 		return
 	}
 
-	energizedTiles[serialize(coordinates)] = true
+	visited := checkCache(energizedTiles, direction, coordinates)
+	if visited {
+		return
+	}
 
 	tile := string(grid[coordinates.y][coordinates.x])
 	newDirections := transformDirection(direction, tile)
+
 	for _, newDirection := range newDirections {
 		newCoordinates := travel(newDirection, coordinates)
 		laser(grid, energizedTiles, newDirection, newCoordinates)
@@ -146,7 +166,7 @@ func laser(grid [][]byte, energizedTiles map[string]bool, direction string, coor
 
 func solvePart1(input string) int {
 	grid := lib.StringToGrid(input)
-	energizedTiles := make(map[string]bool)
+	energizedTiles := make(map[string]map[string]bool)
 
 	direction := "E"
 	coordinates := coordinates{0, 0}
@@ -167,6 +187,7 @@ func solvePart2(input string) int {
 
 func main() {
 	lib.AssertEqual(46, solvePart1(TestString))
+
 	// lib.AssertEqual(1, solvePart2(TestString))
 
 	// lib.AssertEqual(1, solvePart1(SmallTestString))
