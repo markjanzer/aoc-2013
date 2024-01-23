@@ -40,10 +40,7 @@ const DataFile string = "data.txt"
 	the possible outcomes. Then we'll take the best n (parallelTries) results, take the first
 	move of them, and then execute those first moves
 
-
-	To write this code, I'll start off with just checking one square ahead and doing no parallelization.
-
-
+	To write this code, I'll start off with just checking one square ahead and doing no parallelization
 */
 
 type coordinates struct {
@@ -81,40 +78,44 @@ func moveCoords(direction string, coords coordinates) coordinates {
 	}
 }
 
-func validDirections(grid [][]byte, currentCoords coordinates, path string) []string {
+func (state travelState) validDirections() []string {
 	directions := []string{"N", "E", "S", "W"}
-
 	validDirections := []string{}
 
 	for _, direction := range directions {
-		if len(path) > 0 {
+		if len(state.path) > 0 {
 			// We cannot go the opposite direction of the last step
-			lastDirection := string(path[len(path)-1])
+			lastDirection := string(state.path[len(state.path)-1])
 			if direction == oppositeDirection(lastDirection) {
 				continue
 			}
-
 			// We cannot go the same direction more than three times in a row
-			if len(path) > 2 && direction == lastDirection && direction == string(path[len(path)-2]) && direction == string(path[len(path)-3]) {
+			if len(state.path) > 2 && direction == lastDirection && direction == string(state.path[len(state.path)-2]) && direction == string(state.path[len(state.path)-3]) {
 				continue
 			}
 		}
-
 		// We cannot go out of bounds of the grid
-		newCoords := moveCoords(direction, currentCoords)
-		if newCoords.x < 0 || newCoords.y < 0 || newCoords.x > len(grid[0])-1 || newCoords.y > len(grid)-1 {
+		newCoords := moveCoords(direction, state.coordinates)
+		if newCoords.x < 0 || newCoords.y < 0 || newCoords.x > len(state.grid[0])-1 || newCoords.y > len(state.grid)-1 {
 			continue
 		}
-
 		validDirections = append(validDirections, direction)
 	}
 
 	return validDirections
 }
 
-type directionScores struct {
-	direction string
-	score     int
+func (state travelState) distanceFromEnd() int {
+	xMax := len(state.grid[0]) - 1
+	yMax := len(state.grid) - 1
+
+	return (xMax - state.coordinates.x) + (yMax - state.coordinates.y)
+}
+
+func (state travelState) score() float64 {
+	maxDistance := len(state.grid) + len(state.grid[0])
+	distanceTravelled := maxDistance - state.distanceFromEnd()
+	return float64(state.heatLoss) / float64(distanceTravelled)
 }
 
 func heatLossAtCoords(grid [][]byte, coords coordinates) int {
@@ -122,28 +123,35 @@ func heatLossAtCoords(grid [][]byte, coords coordinates) int {
 	return heatLoss
 }
 
-func move(grid [][]byte, currentCoords coordinates, path string) (string, coordinates, int) {
-	validDirections := validDirections(grid, currentCoords, path)
+type travelState struct {
+	grid        [][]byte
+	coordinates coordinates
+	path        string
+	heatLoss    int
+}
 
-	bestScore := 100
-	bestDirection := ""
+func move(direction string, state travelState) travelState {
+	newCoords := moveCoords(direction, state.coordinates)
+	newHeatLoss := state.heatLoss + heatLossAtCoords(state.grid, newCoords)
+	newPath := state.path + direction
 
-	for _, direction := range validDirections {
-		newCoords := moveCoords(direction, currentCoords)
-		newHeatLoss := heatLossAtCoords(grid, newCoords)
-		correctDirection := (newCoords.y - currentCoords.y) + (newCoords.x - currentCoords.x)
-		score := newHeatLoss - (correctDirection * 5)
+	return travelState{state.grid, newCoords, newPath, newHeatLoss}
+}
 
-		if score < bestScore {
-			bestScore = score
-			bestDirection = direction
+func bestMove(state travelState) travelState {
+	bestScore := float64(1000)
+	bestState := state
+
+	for _, direction := range state.validDirections() {
+		newState := move(direction, state)
+
+		if newState.score() < bestScore {
+			bestScore = newState.score()
+			bestState = newState
 		}
 	}
 
-	newCoords := moveCoords(bestDirection, currentCoords)
-	newHeatLoss := heatLossAtCoords(grid, newCoords)
-
-	return bestDirection, newCoords, newHeatLoss
+	return bestState
 }
 
 func printGridWithCoordinate(grid [][]byte, coord coordinates) {
@@ -163,23 +171,21 @@ func printGridWithCoordinate(grid [][]byte, coord coordinates) {
 func solvePart1(input string) int {
 	grid := lib.StringToGrid(input)
 
-	startingCoordinates := coordinates{0, 0}
+	state := travelState{grid, coordinates{0, 0}, "", 0}
 
 	xMax := len(grid[0]) - 1
 	yMax := len(grid) - 1
 
-	currentCoords := startingCoordinates
-	heatLost := 0
-	path := ""
-	for !(currentCoords.x == xMax && currentCoords.y == yMax) {
-		newDirection, newCoords, newHeatLoss := move(grid, currentCoords, path)
-		path += newDirection
-		currentCoords = newCoords
-		heatLost += newHeatLoss
-		printGridWithCoordinate(grid, currentCoords)
+	counter := 0
+	for counter < 1000 && !(state.coordinates.x == xMax && state.coordinates.y == yMax) {
+		state = bestMove(state)
+		fmt.Println("Coords", state.coordinates, "Path", state.path, "Heat Loss", state.heatLoss)
+
+		printGridWithCoordinate(state.grid, state.coordinates)
+		counter++
 	}
 
-	return heatLost
+	return state.heatLoss
 }
 
 /*
