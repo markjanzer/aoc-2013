@@ -3,6 +3,7 @@ package main
 import (
 	"advent-of-code-2023/lib"
 	"fmt"
+	"sort"
 	"strconv"
 )
 
@@ -40,7 +41,9 @@ const DataFile string = "data.txt"
 	the possible outcomes. Then we'll take the best n (parallelTries) results, take the first
 	move of them, and then execute those first moves
 
-	To write this code, I'll start off with just checking one square ahead and doing no parallelization
+
+	Ah the scoring is difficult
+
 */
 
 type coordinates struct {
@@ -79,6 +82,11 @@ func moveCoords(direction string, coords coordinates) coordinates {
 }
 
 func (state travelState) validDirections() []string {
+	// No valid directions if you are at the end
+	if state.distanceFromEnd() == 0 {
+		return []string{}
+	}
+
 	directions := []string{"N", "E", "S", "W"}
 	validDirections := []string{}
 
@@ -112,10 +120,14 @@ func (state travelState) distanceFromEnd() int {
 	return (xMax - state.coordinates.x) + (yMax - state.coordinates.y)
 }
 
+func (state travelState) completed() bool {
+	return state.distanceFromEnd() == 0
+}
+
 func (state travelState) score() float64 {
-	maxDistance := len(state.grid) + len(state.grid[0])
-	distanceTravelled := maxDistance - state.distanceFromEnd()
-	return float64(state.heatLoss) / float64(distanceTravelled)
+	// maxDistance := len(state.grid) + len(state.grid[0])
+	// distanceTravelled := maxDistance - state.distanceFromEnd()
+	return float64(state.heatLoss) + (float64(state.distanceFromEnd()) * 5)
 }
 
 func heatLossAtCoords(grid [][]byte, coords coordinates) int {
@@ -138,29 +150,30 @@ func move(direction string, state travelState) travelState {
 	return travelState{state.grid, newCoords, newPath, newHeatLoss}
 }
 
-func bestMove(state travelState) travelState {
-	bestScore := float64(1000)
-	bestState := state
+func moveAllValidDirections(state travelState, squaresAhead int, resultingStates *[]travelState) {
+	if squaresAhead == 0 || state.distanceFromEnd() == 0 {
+		*resultingStates = append(*resultingStates, state)
+		return
+	}
 
 	for _, direction := range state.validDirections() {
 		newState := move(direction, state)
-
-		if newState.score() < bestScore {
-			bestScore = newState.score()
-			bestState = newState
-		}
+		moveAllValidDirections(newState, squaresAhead-1, resultingStates)
 	}
-
-	return bestState
 }
 
-func printGridWithCoordinate(grid [][]byte, coord coordinates) {
-	for y := range grid {
-		for x := range grid[y] {
-			if y == coord.y && x == coord.x {
+func (state travelState) printGrid() {
+	coords := []coordinates{{0, 0}}
+	for i, direction := range state.path {
+		coords = append(coords, moveCoords(string(direction), coords[i]))
+	}
+
+	for y := range state.grid {
+		for x := range state.grid[y] {
+			if lib.Any(coords, func(coord coordinates) bool { return coord.x == x && coord.y == y }) {
 				fmt.Print("X")
 			} else {
-				fmt.Print(string(grid[y][x]))
+				fmt.Print(string(state.grid[y][x]))
 			}
 		}
 		fmt.Println()
@@ -168,24 +181,48 @@ func printGridWithCoordinate(grid [][]byte, coord coordinates) {
 	fmt.Println()
 }
 
+const squaresAhead = 10
+const parallelTries = 100
+
 func solvePart1(input string) int {
 	grid := lib.StringToGrid(input)
 
-	state := travelState{grid, coordinates{0, 0}, "", 0}
-
-	xMax := len(grid[0]) - 1
-	yMax := len(grid) - 1
+	states := []travelState{{grid, coordinates{0, 0}, "", 0}}
+	bestCompletedState := travelState{grid, coordinates{0, 0}, "", 0}
 
 	counter := 0
-	for counter < 1000 && !(state.coordinates.x == xMax && state.coordinates.y == yMax) {
-		state = bestMove(state)
-		fmt.Println("Coords", state.coordinates, "Path", state.path, "Heat Loss", state.heatLoss)
+	for counter < 1000 {
+		resultingStates := []travelState{}
+		for _, state := range states {
+			moveAllValidDirections(state, squaresAhead, &resultingStates)
+		}
 
-		printGridWithCoordinate(state.grid, state.coordinates)
+		for _, state := range resultingStates {
+			if state.completed() && (bestCompletedState.score() == 0 || state.score() < bestCompletedState.score()) {
+				bestCompletedState = state
+			}
+		}
+
+		resultingStates = lib.Filter(resultingStates, func(state travelState) bool { return !state.completed() })
+
+		sort.Slice(resultingStates, func(i, j int) bool {
+			return resultingStates[i].score() < resultingStates[j].score()
+		})
+
+		if bestCompletedState.score() != 0 && bestCompletedState.score() < resultingStates[0].score() {
+			break
+		}
+
+		states = resultingStates[:parallelTries]
+
+		// fmt.Println("Coords", state.coordinates, "Path", state.path, "Heat Loss", state.heatLoss)
+		// state.printGrid()
+
 		counter++
+		fmt.Println(counter)
 	}
 
-	return state.heatLoss
+	return bestCompletedState.heatLoss
 }
 
 /*
@@ -204,9 +241,9 @@ func main() {
 	// lib.AssertEqual(1, solvePart1(SmallTestString))
 	// lib.AssertEqual(1, solvePart2(SmallTestString))
 
-	// dataString := lib.GetDataString(DataFile)
-	// result1 := solvePart1(dataString)
-	// fmt.Println(result1)
+	dataString := lib.GetDataString(DataFile)
+	result1 := solvePart1(dataString)
+	fmt.Println(result1)
 
 	// dataString := lib.GetDataString(DataFile)
 	// result2 := solvePart2(dataString)
