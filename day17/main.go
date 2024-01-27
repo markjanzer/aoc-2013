@@ -2,8 +2,6 @@ package main
 
 import (
 	"advent-of-code-2023/lib"
-	"fmt"
-	"sort"
 	"strconv"
 )
 
@@ -26,29 +24,46 @@ const TestString string = `2413432311323
 const DataFile string = "data.txt"
 
 /*
-	Part 1 Notes
+	Part 1 attempt 2
 
-	Can't move in one direction more than three times
-	What is the way to get from the top left to the bottom right
-	with the lowest heat loss (numbers) accumulated?
+	Alright I need two things to make this work, a heap and then an A* algorithm that uses that heap
+	I made the heap. Now I'm going to make this work.
 
-	Alright,
-	We can calculate the score of a given set of moves by getting the average
-	heat per positive direction. E and S are 1 direction, N and W are negative -1
+	Let's try to describe what we want to build here
 
-	In order to be able to move and avoid squares with more heat loss, we need to be able to see more
-	than one square ahead. For each move we'll look squaresAhead and determine the score for all of
-	the possible outcomes. Then we'll take the best n (parallelTries) results, take the first
-	move of them, and then execute those first moves
+	We're going to take the original state
+	We're going to find all of the valid directions. Then we're going to move to that square.
+	When we move to that square we'll store a few things in the new state
+	- The coordinates they are on
+	- The cost of getting there
+	- The move they took to get there
+	- The number of repeated moves
+	We're going to have a map with the squares as keys, and the cost to get there as the value
+	Whenever we move to a square, we see if the map has a cost value that is lower than the current cost
+		If it is lower than the current cost then we don't do anything, we've already found a more
+		efficient way to get to this square
+	If the current cost is lower or there is no lowest value for that square then we set that value in the map
+	Then we determine the priority for this state. We'll have an int where lower is better, and it will be current
+	cost + distance from the end
+	Then we add this square to the heap (which determines order by the priority)
 
+	I guess that this starts with a state in the top left with everything calculated, and we put that in the heap.
+	Then we pop from the heap, get a list of valid directions, then travel to each of those, checking the
+	new square against the map, and then potentially adding it to the heap.
 
-	Ah the scoring is difficult
 
 */
 
 type coordinates struct {
 	x int
 	y int
+}
+
+type travelState struct {
+	coords        coordinates
+	difficulty    int
+	lastDirection string
+	wentDirection int
 }
 
 func oppositeDirection(direction string) string {
@@ -62,7 +77,8 @@ func oppositeDirection(direction string) string {
 	case "W":
 		return "E"
 	default:
-		panic("Invalid direction")
+		// This is to handle the initial state, not sure if I like it here
+		return "none"
 	}
 }
 
@@ -81,9 +97,9 @@ func moveCoords(direction string, coords coordinates) coordinates {
 	}
 }
 
-func (state travelState) validDirections() []string {
+func (state travelState) validDirections(grid [][]byte) []string {
 	// No valid directions if you are at the end
-	if state.distanceFromEnd() == 0 {
+	if distanceFromEnd(grid, state.coords) == 0 {
 		return []string{}
 	}
 
@@ -91,20 +107,17 @@ func (state travelState) validDirections() []string {
 	validDirections := []string{}
 
 	for _, direction := range directions {
-		if len(state.path) > 0 {
-			// We cannot go the opposite direction of the last step
-			lastDirection := string(state.path[len(state.path)-1])
-			if direction == oppositeDirection(lastDirection) {
-				continue
-			}
-			// We cannot go the same direction more than three times in a row
-			if len(state.path) > 2 && direction == lastDirection && direction == string(state.path[len(state.path)-2]) && direction == string(state.path[len(state.path)-3]) {
-				continue
-			}
+		// We cannot go the opposite direction of the last step
+		if direction == oppositeDirection(state.lastDirection) {
+			continue
+		}
+		// We cannot go the same direction more than three times in a row
+		if state.wentDirection > 3 {
+			continue
 		}
 		// We cannot go out of bounds of the grid
-		newCoords := moveCoords(direction, state.coordinates)
-		if newCoords.x < 0 || newCoords.y < 0 || newCoords.x > len(state.grid[0])-1 || newCoords.y > len(state.grid)-1 {
+		newCoords := moveCoords(direction, state.coords)
+		if newCoords.x < 0 || newCoords.y < 0 || newCoords.x > len(grid[0])-1 || newCoords.y > len(grid)-1 {
 			continue
 		}
 		validDirections = append(validDirections, direction)
@@ -113,136 +126,68 @@ func (state travelState) validDirections() []string {
 	return validDirections
 }
 
-func (state travelState) distanceFromEnd() int {
-	xMax := len(state.grid[0]) - 1
-	yMax := len(state.grid) - 1
-
-	return (xMax - state.coordinates.x) + (yMax - state.coordinates.y)
+func distanceFromEnd(grid [][]byte, coords coordinates) int {
+	xMax := len(grid[0]) - 1
+	yMax := len(grid) - 1
+	return (xMax - coords.x) + (yMax - coords.y)
 }
 
-func (state travelState) completed() bool {
-	return state.distanceFromEnd() == 0
+func serializeCoords(coords coordinates) string {
+	return strconv.Itoa(coords.x) + "," + strconv.Itoa(coords.y)
 }
 
-func (state travelState) score() float64 {
-	// maxDistance := len(state.grid) + len(state.grid[0])
-	// distanceTravelled := maxDistance - state.distanceFromEnd()
-	return float64(state.heatLoss) + (float64(state.distanceFromEnd()) * 5)
-}
-
-func heatLossAtCoords(grid [][]byte, coords coordinates) int {
-	heatLoss, _ := strconv.Atoi(string(grid[coords.y][coords.x]))
-	return heatLoss
-}
-
-type travelState struct {
-	grid        [][]byte
-	coordinates coordinates
-	path        string
-	heatLoss    int
-}
-
-func move(direction string, state travelState) travelState {
-	newCoords := moveCoords(direction, state.coordinates)
-	newHeatLoss := state.heatLoss + heatLossAtCoords(state.grid, newCoords)
-	newPath := state.path + direction
-
-	return travelState{state.grid, newCoords, newPath, newHeatLoss}
-}
-
-func moveAllValidDirections(state travelState, squaresAhead int, resultingStates *[]travelState) {
-	if squaresAhead == 0 || state.distanceFromEnd() == 0 {
-		*resultingStates = append(*resultingStates, state)
-		return
+func addCoordsDifficulty(coordsDifficulty map[string]int, state travelState) bool {
+	key := serializeCoords(state.coords)
+	if originalDifficulty, exists := coordsDifficulty[key]; !exists || originalDifficulty > state.difficulty {
+		coordsDifficulty[key] = state.difficulty
+		return true
 	}
-
-	for _, direction := range state.validDirections() {
-		newState := move(direction, state)
-		moveAllValidDirections(newState, squaresAhead-1, resultingStates)
-	}
+	return false
 }
 
-func (state travelState) printGrid() {
-	coords := []coordinates{{0, 0}}
-	for i, direction := range state.path {
-		coords = append(coords, moveCoords(string(direction), coords[i]))
-	}
-
-	for y := range state.grid {
-		for x := range state.grid[y] {
-			if lib.Any(coords, func(coord coordinates) bool { return coord.x == x && coord.y == y }) {
-				fmt.Print("X")
-			} else {
-				fmt.Print(string(state.grid[y][x]))
-			}
-		}
-		fmt.Println()
-	}
-	fmt.Println()
+func difficultyAt(grid [][]byte, coords coordinates) int {
+	return lib.IntFromByte(grid[coords.y][coords.x])
 }
 
-const squaresAhead = 10
-const parallelTries = 100
-
-func oldSolvePart1(input string) int {
-	grid := lib.StringToGrid(input)
-
-	states := []travelState{{grid, coordinates{0, 0}, "", 0}}
-	bestCompletedState := travelState{grid, coordinates{0, 0}, "", 0}
-
-	counter := 0
-	for counter < 1000 {
-		resultingStates := []travelState{}
-		for _, state := range states {
-			moveAllValidDirections(state, squaresAhead, &resultingStates)
-		}
-
-		for _, state := range resultingStates {
-			if state.completed() && (bestCompletedState.score() == 0 || state.score() < bestCompletedState.score()) {
-				bestCompletedState = state
-			}
-		}
-
-		resultingStates = lib.Filter(resultingStates, func(state travelState) bool { return !state.completed() })
-
-		sort.Slice(resultingStates, func(i, j int) bool {
-			return resultingStates[i].score() < resultingStates[j].score()
-		})
-
-		if bestCompletedState.score() != 0 && bestCompletedState.score() < resultingStates[0].score() {
-			break
-		}
-
-		states = resultingStates[:parallelTries]
-
-		// fmt.Println("Coords", state.coordinates, "Path", state.path, "Heat Loss", state.heatLoss)
-		// state.printGrid()
-
-		counter++
-		fmt.Println(counter)
+func (state travelState) move(grid [][]byte, direction string) travelState {
+	newCoords := moveCoords(direction, state.coords)
+	newDifficulty := state.difficulty + difficultyAt(grid, newCoords)
+	var newWentDirection int
+	if direction == state.lastDirection {
+		newWentDirection = state.wentDirection + 1
+	} else {
+		newWentDirection = 1
 	}
-
-	return bestCompletedState.heatLoss
+	return travelState{newCoords, newDifficulty, direction, newWentDirection}
 }
-
-
-/* 
-	Part 1 attempt 2
-
-	I'm going to to try an approach like Dijkstra's algorithm
-
-	Alright I need two things to make this work, a heap and then an A* algorithm that uses that heap
-
-
-*/
 
 func solvePart1(input string) int {
-	
+	grid := lib.StringToGrid(input)
+
+	upNext := lib.NewHeap(func(a, b travelState) bool {
+		return distanceFromEnd(grid, a.coords) < distanceFromEnd(grid, b.coords)
+	})
+
+	coordsDifficulty := make(map[string]int)
+	initialState := travelState{coordinates{0, 0}, 0, "none", 0}
+
+	addCoordsDifficulty(coordsDifficulty, initialState)
+	upNext.Insert(initialState)
+
+	for upNext.Size() > 0 {
+		state := upNext.Pop()
+
+		for _, direction := range state.validDirections(grid) {
+			newState := state.move(grid, direction)
+			if addCoordsDifficulty(coordsDifficulty, newState) {
+				upNext.Insert(newState)
+			}
+		}
+	}
+
+	lastCoords := coordinates{len(grid[0]) - 1, len(grid) - 1}
+	return coordsDifficulty[serializeCoords(lastCoords)]
 }
-
-
-
-
 
 /*
 	Part 2 Notes
@@ -254,15 +199,15 @@ func solvePart2(input string) int {
 }
 
 func main() {
-	lib.AssertEqual(102, oldSTestString))
+	lib.AssertEqual(102, solvePart1(TestString))
 	// lib.AssertEqual(1, solvePart2(TestString))
 
 	// lib.AssertEqual(1, solvePart1(SmallTestString))
 	// lib.AssertEqual(1, solvePart2(SmallTestString))
 
-	dataString := lib.GetDataString(DataFile)
-	result1 := solvePart1(dataString)
-	fmt.Println(result1)
+	// dataString := lib.GetDataString(DataFile)
+	// result1 := solvePart1(dataString)
+	// fmt.Println(result1)
 
 	// dataString := lib.GetDataString(DataFile)
 	// result2 := solvePart2(dataString)
