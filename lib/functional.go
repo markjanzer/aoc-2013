@@ -51,3 +51,7 @@ func Any[T any](collection []T, eval func(item T) bool) bool {
 	}
 	return false
 }
+
+func None[T any](collection []T, eval func(item T) bool) bool {
+	return !Any(collection, eval)
+}

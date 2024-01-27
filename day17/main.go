@@ -184,7 +184,7 @@ func (state travelState) printGrid() {
 const squaresAhead = 10
 const parallelTries = 100
 
-func solvePart1(input string) int {
+func oldSolvePart1(input string) int {
 	grid := lib.StringToGrid(input)
 
 	states := []travelState{{grid, coordinates{0, 0}, "", 0}}
@@ -225,6 +225,25 @@ func solvePart1(input string) int {
 	return bestCompletedState.heatLoss
 }
 
+
+/* 
+	Part 1 attempt 2
+
+	I'm going to to try an approach like Dijkstra's algorithm
+
+	Alright I need two things to make this work, a heap and then an A* algorithm that uses that heap
+
+
+*/
+
+func solvePart1(input string) int {
+	
+}
+
+
+
+
+
 /*
 	Part 2 Notes
 
@@ -235,7 +254,7 @@ func solvePart2(input string) int {
 }
 
 func main() {
-	lib.AssertEqual(102, solvePart1(TestString))
+	lib.AssertEqual(102, oldSTestString))
 	// lib.AssertEqual(1, solvePart2(TestString))
 
 	// lib.AssertEqual(1, solvePart1(SmallTestString))
