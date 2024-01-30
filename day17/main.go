@@ -2,7 +2,7 @@ package main
 
 import (
 	"advent-of-code-2023/lib"
-	"strconv"
+	"fmt"
 )
 
 const SmallTestString string = ``
@@ -64,6 +64,7 @@ type travelState struct {
 	difficulty    int
 	lastDirection string
 	wentDirection int
+	previousState *travelState
 }
 
 func oppositeDirection(direction string) string {
@@ -98,11 +99,6 @@ func moveCoords(direction string, coords coordinates) coordinates {
 }
 
 func (state travelState) validDirections(grid [][]byte) []string {
-	// No valid directions if you are at the end
-	if distanceFromEnd(grid, state.coords) == 0 {
-		return []string{}
-	}
-
 	directions := []string{"N", "E", "S", "W"}
 	validDirections := []string{}
 
@@ -132,14 +128,18 @@ func distanceFromEnd(grid [][]byte, coords coordinates) int {
 	return (xMax - coords.x) + (yMax - coords.y)
 }
 
-func serializeCoords(coords coordinates) string {
-	return strconv.Itoa(coords.x) + "," + strconv.Itoa(coords.y)
+func (state travelState) complete(grid [][]byte) bool {
+	return distanceFromEnd(grid, state.coords) == 0
+}
+
+func serializeState(state travelState) string {
+	return fmt.Sprintf("%v,%v", state.coords.x, state.coords.y)
 }
 
 func addCoordsDifficulty(coordsDifficulty map[string]int, state travelState) bool {
-	key := serializeCoords(state.coords)
-	if originalDifficulty, exists := coordsDifficulty[key]; !exists || originalDifficulty > state.difficulty {
-		coordsDifficulty[key] = state.difficulty
+	serializedState := serializeState(state)
+	if originalDifficulty, exists := coordsDifficulty[serializedState]; !exists || originalDifficulty > state.difficulty {
+		coordsDifficulty[serializedState] = state.difficulty
 		return true
 	}
 	return false
@@ -158,35 +158,69 @@ func (state travelState) move(grid [][]byte, direction string) travelState {
 	} else {
 		newWentDirection = 1
 	}
-	return travelState{newCoords, newDifficulty, direction, newWentDirection}
+	return travelState{newCoords, newDifficulty, direction, newWentDirection, &state}
+}
+
+func priority(state travelState, grid [][]byte) int {
+	return state.difficulty + distanceFromEnd(grid, state.coords)
 }
 
 func solvePart1(input string) int {
 	grid := lib.StringToGrid(input)
 
 	upNext := lib.NewHeap(func(a, b travelState) bool {
-		return distanceFromEnd(grid, a.coords) < distanceFromEnd(grid, b.coords)
+		return priority(a, grid) < priority(b, grid)
 	})
 
 	coordsDifficulty := make(map[string]int)
-	initialState := travelState{coordinates{0, 0}, 0, "none", 0}
-
+	initialState := travelState{coordinates{0, 0}, 0, "none", 0, nil}
 	addCoordsDifficulty(coordsDifficulty, initialState)
 	upNext.Insert(initialState)
 
 	for upNext.Size() > 0 {
 		state := upNext.Pop()
 
+		if state.complete(grid) {
+			result := state.difficulty
+
+			path := map[coordinates]bool{}
+			for state.previousState != nil {
+				path[state.coords] = true
+				state = *state.previousState
+			}
+
+			lib.PrintGrid(grid)
+			fmt.Println()
+
+			for y, row := range grid {
+				for x := range row {
+					if path[coordinates{x, y}] {
+						fmt.Print("X")
+					} else {
+						fmt.Print(lib.IntFromByte(grid[y][x]))
+					}
+				}
+				fmt.Println()
+			}
+
+			return result
+		}
+
 		for _, direction := range state.validDirections(grid) {
 			newState := state.move(grid, direction)
-			if addCoordsDifficulty(coordsDifficulty, newState) {
+			newOrLowerDifficulty := addCoordsDifficulty(coordsDifficulty, newState)
+			if newOrLowerDifficulty {
 				upNext.Insert(newState)
 			}
 		}
 	}
 
-	lastCoords := coordinates{len(grid[0]) - 1, len(grid) - 1}
-	return coordsDifficulty[serializeCoords(lastCoords)]
+	// lastCoords := coordinates{len(grid[0]) - 1, len(grid) - 1}
+
+	// lib.PrintGrid(grid)
+	panic("No solution found!")
+
+	// return coordsDifficulty[serializeState(lastCoords)]
 }
 
 /*
