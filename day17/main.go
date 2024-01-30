@@ -62,7 +62,6 @@ type travelState struct {
 	difficulty    int
 	lastDirection string
 	wentDirection int
-	previousState *travelState
 }
 
 func oppositeDirection(direction string) string {
@@ -123,7 +122,7 @@ func (state travelState) moveValidDirections(grid [][]byte) []travelState {
 		}
 
 		newDifficulty := state.difficulty + difficultyAt(grid, newCoords)
-		newState := travelState{newCoords, newDifficulty, direction, newWentDirection, &state}
+		newState := travelState{newCoords, newDifficulty, direction, newWentDirection}
 
 		validDirections = append(validDirections, newState)
 	}
@@ -141,19 +140,6 @@ func (state travelState) complete(grid [][]byte) bool {
 	return distanceFromEnd(grid, state.coords) == 0
 }
 
-func serializeState(state travelState) string {
-	return fmt.Sprintf("%v,%v,%v,%v", state.coords.x, state.coords.y, state.lastDirection, state.wentDirection)
-}
-
-func addCoordsDifficulty(coordsDifficulty map[string]int, state travelState) bool {
-	serializedState := serializeState(state)
-	if originalDifficulty, exists := coordsDifficulty[serializedState]; !exists || originalDifficulty > state.difficulty {
-		coordsDifficulty[serializedState] = state.difficulty
-		return true
-	}
-	return false
-}
-
 func difficultyAt(grid [][]byte, coords coordinates) int {
 	return lib.IntFromByte(grid[coords.y][coords.x])
 }
@@ -164,55 +150,31 @@ func priority(state travelState, grid [][]byte) int {
 
 func solvePart1(input string) int {
 	grid := lib.StringToGrid(input)
+	xMax := len(grid[0]) - 1
+	yMax := len(grid) - 1
 
-	upNext := lib.NewHeap(func(a, b travelState) bool {
-		return priority(a, grid) < priority(b, grid)
-	})
+	initialState := []travelState{{coordinates{0, 0}, 0, "none", 0}}
 
-	coordsDifficulty := make(map[string]int)
-	initialState := travelState{coordinates{0, 0}, 0, "none", 0, nil}
-	addCoordsDifficulty(coordsDifficulty, initialState)
-	upNext.Insert(initialState)
+	done := func(state travelState) bool {
+		return state.complete(grid)
+	}
 
-	for upNext.Size() > 0 {
-		state := upNext.Pop()
-
-		if state.complete(grid) {
-			fmt.Println(state)
-			result := state.difficulty
-
-			path := map[coordinates]bool{}
-			for state.previousState != nil {
-				path[state.coords] = true
-				state = *state.previousState
-			}
-
-			lib.PrintGrid(grid)
-			fmt.Println()
-
-			for y, row := range grid {
-				for x := range row {
-					if path[coordinates{x, y}] {
-						fmt.Print("X")
-					} else {
-						fmt.Print(lib.IntFromByte(grid[y][x]))
-					}
-				}
-				fmt.Println()
-			}
-
-			return result
-		}
-
+	next := func(state travelState, nextStates map[travelState]int) {
 		for _, newState := range state.moveValidDirections(grid) {
-			newOrLowerDifficulty := addCoordsDifficulty(coordsDifficulty, newState)
-			if newOrLowerDifficulty {
-				upNext.Insert(newState)
-			}
+			nextStates[newState] = difficultyAt(grid, newState.coords)
 		}
 	}
 
-	panic("No solution found!")
+	estimate := func(state travelState) int {
+		return priority(state, grid)
+	}
+
+	return lib.BStar(
+		initialState,
+		done,
+		next,
+		estimate,
+	)
 }
 
 /*
@@ -231,9 +193,9 @@ func main() {
 	// lib.AssertEqual(1, solvePart1(SmallTestString))
 	// lib.AssertEqual(1, solvePart2(SmallTestString))
 
-	// dataString := lib.GetDataString(DataFile)
-	// result1 := solvePart1(dataString)
-	// fmt.Println(result1)
+	dataString := lib.GetDataString(DataFile)
+	result1 := solvePart1(dataString)
+	fmt.Println(result1)
 
 	// dataString := lib.GetDataString(DataFile)
 	// result2 := solvePart2(dataString)
