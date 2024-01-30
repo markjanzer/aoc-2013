@@ -108,7 +108,7 @@ func (state travelState) validDirections(grid [][]byte) []string {
 			continue
 		}
 		// We cannot go the same direction more than three times in a row
-		if state.wentDirection > 3 {
+		if state.wentDirection >= 3 && direction == state.lastDirection {
 			continue
 		}
 		// We cannot go out of bounds of the grid
@@ -119,7 +119,21 @@ func (state travelState) validDirections(grid [][]byte) []string {
 		validDirections = append(validDirections, direction)
 	}
 
+	// fmt.Println(state.coords, validDirections)
+
 	return validDirections
+}
+
+func (state travelState) move(grid [][]byte, direction string) travelState {
+	newCoords := moveCoords(direction, state.coords)
+	newDifficulty := state.difficulty + difficultyAt(grid, newCoords)
+	var newWentDirection int
+	if direction == state.lastDirection {
+		newWentDirection = state.wentDirection + 1
+	} else {
+		newWentDirection = 1
+	}
+	return travelState{newCoords, newDifficulty, direction, newWentDirection, &state}
 }
 
 func distanceFromEnd(grid [][]byte, coords coordinates) int {
@@ -133,7 +147,7 @@ func (state travelState) complete(grid [][]byte) bool {
 }
 
 func serializeState(state travelState) string {
-	return fmt.Sprintf("%v,%v", state.coords.x, state.coords.y)
+	return fmt.Sprintf("%v,%v,%v,%v", state.coords.x, state.coords.y, state.lastDirection, state.wentDirection)
 }
 
 func addCoordsDifficulty(coordsDifficulty map[string]int, state travelState) bool {
@@ -147,18 +161,6 @@ func addCoordsDifficulty(coordsDifficulty map[string]int, state travelState) boo
 
 func difficultyAt(grid [][]byte, coords coordinates) int {
 	return lib.IntFromByte(grid[coords.y][coords.x])
-}
-
-func (state travelState) move(grid [][]byte, direction string) travelState {
-	newCoords := moveCoords(direction, state.coords)
-	newDifficulty := state.difficulty + difficultyAt(grid, newCoords)
-	var newWentDirection int
-	if direction == state.lastDirection {
-		newWentDirection = state.wentDirection + 1
-	} else {
-		newWentDirection = 1
-	}
-	return travelState{newCoords, newDifficulty, direction, newWentDirection, &state}
 }
 
 func priority(state travelState, grid [][]byte) int {
@@ -181,6 +183,7 @@ func solvePart1(input string) int {
 		state := upNext.Pop()
 
 		if state.complete(grid) {
+			fmt.Println(state)
 			result := state.difficulty
 
 			path := map[coordinates]bool{}
@@ -204,6 +207,11 @@ func solvePart1(input string) int {
 			}
 
 			return result
+		}
+
+		if distanceFromEnd(grid, state.coords) == 1 {
+			fmt.Println(state)
+			fmt.Println(state.validDirections(grid))
 		}
 
 		for _, direction := range state.validDirections(grid) {
