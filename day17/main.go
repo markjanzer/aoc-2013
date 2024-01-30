@@ -50,8 +50,6 @@ const DataFile string = "data.txt"
 	I guess that this starts with a state in the top left with everything calculated, and we put that in the heap.
 	Then we pop from the heap, get a list of valid directions, then travel to each of those, checking the
 	new square against the map, and then potentially adding it to the heap.
-
-
 */
 
 type coordinates struct {
@@ -98,42 +96,39 @@ func moveCoords(direction string, coords coordinates) coordinates {
 	}
 }
 
-func (state travelState) validDirections(grid [][]byte) []string {
+func (state travelState) moveValidDirections(grid [][]byte) []travelState {
 	directions := []string{"N", "E", "S", "W"}
-	validDirections := []string{}
+	validDirections := []travelState{}
 
 	for _, direction := range directions {
 		// We cannot go the opposite direction of the last step
 		if direction == oppositeDirection(state.lastDirection) {
 			continue
 		}
-		// We cannot go the same direction more than three times in a row
-		if state.wentDirection >= 3 && direction == state.lastDirection {
-			continue
-		}
+
 		// We cannot go out of bounds of the grid
 		newCoords := moveCoords(direction, state.coords)
 		if newCoords.x < 0 || newCoords.y < 0 || newCoords.x > len(grid[0])-1 || newCoords.y > len(grid)-1 {
 			continue
 		}
-		validDirections = append(validDirections, direction)
-	}
 
-	// fmt.Println(state.coords, validDirections)
+		var newWentDirection int
+		if direction == state.lastDirection {
+			newWentDirection = state.wentDirection + 1
+		} else {
+			newWentDirection = 1
+		}
+		if newWentDirection > 3 {
+			continue
+		}
+
+		newDifficulty := state.difficulty + difficultyAt(grid, newCoords)
+		newState := travelState{newCoords, newDifficulty, direction, newWentDirection, &state}
+
+		validDirections = append(validDirections, newState)
+	}
 
 	return validDirections
-}
-
-func (state travelState) move(grid [][]byte, direction string) travelState {
-	newCoords := moveCoords(direction, state.coords)
-	newDifficulty := state.difficulty + difficultyAt(grid, newCoords)
-	var newWentDirection int
-	if direction == state.lastDirection {
-		newWentDirection = state.wentDirection + 1
-	} else {
-		newWentDirection = 1
-	}
-	return travelState{newCoords, newDifficulty, direction, newWentDirection, &state}
 }
 
 func distanceFromEnd(grid [][]byte, coords coordinates) int {
@@ -209,13 +204,7 @@ func solvePart1(input string) int {
 			return result
 		}
 
-		if distanceFromEnd(grid, state.coords) == 1 {
-			fmt.Println(state)
-			fmt.Println(state.validDirections(grid))
-		}
-
-		for _, direction := range state.validDirections(grid) {
-			newState := state.move(grid, direction)
+		for _, newState := range state.moveValidDirections(grid) {
 			newOrLowerDifficulty := addCoordsDifficulty(coordsDifficulty, newState)
 			if newOrLowerDifficulty {
 				upNext.Insert(newState)
@@ -223,12 +212,7 @@ func solvePart1(input string) int {
 		}
 	}
 
-	// lastCoords := coordinates{len(grid[0]) - 1, len(grid) - 1}
-
-	// lib.PrintGrid(grid)
 	panic("No solution found!")
-
-	// return coordsDifficulty[serializeState(lastCoords)]
 }
 
 /*
@@ -242,7 +226,7 @@ func solvePart2(input string) int {
 
 func main() {
 	lib.AssertEqual(102, solvePart1(TestString))
-	// lib.AssertEqual(1, solvePart2(TestString))
+	// lib.AssertEqual(94, solvePart2(TestString))
 
 	// lib.AssertEqual(1, solvePart1(SmallTestString))
 	// lib.AssertEqual(1, solvePart2(SmallTestString))
