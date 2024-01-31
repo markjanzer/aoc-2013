@@ -2,7 +2,6 @@ package main
 
 import (
 	"advent-of-code-2023/lib"
-	"fmt"
 )
 
 const SmallTestString string = ``
@@ -59,9 +58,8 @@ type coordinates struct {
 
 type travelState struct {
 	coords        coordinates
-	difficulty    int
 	lastDirection string
-	wentDirection int
+	consecutive   int
 }
 
 func oppositeDirection(direction string) string {
@@ -95,72 +93,23 @@ func moveCoords(direction string, coords coordinates) coordinates {
 	}
 }
 
-func (state travelState) moveValidDirections(grid [][]byte) []travelState {
-	directions := []string{"N", "E", "S", "W"}
-	validDirections := []travelState{}
-
-	for _, direction := range directions {
-		// We cannot go the opposite direction of the last step
-		if direction == oppositeDirection(state.lastDirection) {
-			continue
-		}
-
-		// We cannot go out of bounds of the grid
-		newCoords := moveCoords(direction, state.coords)
-		if newCoords.x < 0 || newCoords.y < 0 || newCoords.x > len(grid[0])-1 || newCoords.y > len(grid)-1 {
-			continue
-		}
-
-		var consecutive int
-		if direction == state.lastDirection {
-			consecutive = state.wentDirection + 1
-		} else {
-			consecutive = 1
-		}
-		if consecutive > 3 {
-			continue
-		}
-
-		newDifficulty := state.difficulty + difficultyAt(grid, newCoords)
-		newState := travelState{newCoords, newDifficulty, direction, consecutive}
-
-		validDirections = append(validDirections, newState)
-	}
-
-	return validDirections
-}
-
-func distanceFromEnd(grid [][]byte, coords coordinates) int {
+func distanceFromEnd(grid [][]byte, state travelState) int {
 	xMax := len(grid[0]) - 1
 	yMax := len(grid) - 1
-	return (xMax - coords.x) + (yMax - coords.y)
-}
-
-func (state travelState) complete(grid [][]byte) bool {
-	return distanceFromEnd(grid, state.coords) == 0
+	return (xMax - state.coords.x) + (yMax - state.coords.y)
 }
 
 func difficultyAt(grid [][]byte, coords coordinates) int {
 	return lib.IntFromByte(grid[coords.y][coords.x])
 }
 
-func priority(state travelState, grid [][]byte) int {
-	return state.difficulty + distanceFromEnd(grid, state.coords)
-}
-
 func solvePart1(input string) int {
 	grid := lib.StringToGrid(input)
-	xMax := len(grid[0]) - 1
-	yMax := len(grid) - 1
 
-	initialState := []travelState{{coordinates{0, 0}, 0, "none", 0}}
-
-	distanceFromEnd := func(state travelState) int {
-		return (xMax - state.coords.x) + (yMax - state.coords.y)
-	}
+	initialState := []travelState{{coordinates{0, 0}, "none", 0}}
 
 	done := func(state travelState) bool {
-		return distanceFromEnd(state) == 0
+		return distanceFromEnd(grid, state) == 0
 	}
 
 	next := func(state travelState) (nextStates map[travelState]int) {
@@ -181,7 +130,7 @@ func solvePart1(input string) int {
 
 			var consecutive int
 			if direction == state.lastDirection {
-				consecutive = state.wentDirection + 1
+				consecutive = state.consecutive + 1
 			} else {
 				consecutive = 1
 			}
@@ -189,18 +138,16 @@ func solvePart1(input string) int {
 				continue
 			}
 
-			// newDifficulty := state.difficulty + difficultyAt(grid, newCoords)
-			newState := travelState{newCoords, 0, direction, consecutive}
+			newState := travelState{newCoords, direction, consecutive}
 
 			nextStates[newState] = difficultyAt(grid, newCoords)
-			// nextStates[newState] = newDifficulty
 		}
 
 		return nextStates
 	}
 
 	estimate := func(state travelState) int {
-		return state.difficulty + distanceFromEnd(state)
+		return distanceFromEnd(grid, state)
 	}
 
 	return lib.AStar(
@@ -227,9 +174,9 @@ func main() {
 	// lib.AssertEqual(1, solvePart1(SmallTestString))
 	// lib.AssertEqual(1, solvePart2(SmallTestString))
 
-	dataString := lib.GetDataString(DataFile)
-	result1 := solvePart1(dataString)
-	fmt.Println(result1)
+	// dataString := lib.GetDataString(DataFile)
+	// result1 := solvePart1(dataString)
+	// fmt.Println(result1)
 
 	// dataString := lib.GetDataString(DataFile)
 	// result2 := solvePart2(dataString)
