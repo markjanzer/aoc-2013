@@ -73,8 +73,7 @@ func oppositeDirection(direction string) string {
 	case "W":
 		return "E"
 	default:
-		// This is to handle the initial state, not sure if I like it here
-		return "none"
+		panic("Invalid direction")
 	}
 }
 
@@ -118,7 +117,7 @@ func solvePart1(input string) int {
 
 		for _, direction := range directions {
 			// We cannot go the opposite direction of the last step
-			if direction == oppositeDirection(state.lastDirection) {
+			if state.consecutive > 0 && direction == oppositeDirection(state.lastDirection) {
 				continue
 			}
 
@@ -163,16 +162,72 @@ func solvePart1(input string) int {
 
 */
 
+func canChangeDirection(state travelState) bool {
+	return state.consecutive == 0 || (state.consecutive >= 4 && state.consecutive <= 10)
+}
+
 func solvePart2(input string) int {
-	return 0
+	grid := lib.StringToGrid(input)
+
+	initialState := []travelState{{coordinates{0, 0}, "none", 0}}
+
+	done := func(state travelState) bool {
+		return distanceFromEnd(grid, state) == 0 && canChangeDirection(state)
+	}
+
+	next := func(state travelState) (nextStates map[travelState]int) {
+		nextStates = make(map[travelState]int)
+		directions := []string{"N", "E", "S", "W"}
+
+		for _, direction := range directions {
+			// We cannot go the opposite direction of the last step
+			if state.consecutive > 0 && direction == oppositeDirection(state.lastDirection) {
+				continue
+			}
+
+			// We cannot go out of bounds of the grid
+			newCoords := moveCoords(direction, state.coords)
+			if newCoords.x < 0 || newCoords.y < 0 || newCoords.x > len(grid[0])-1 || newCoords.y > len(grid)-1 {
+				continue
+			}
+
+			var consecutive int
+			if direction == state.lastDirection {
+				consecutive = state.consecutive + 1
+			} else {
+				if canChangeDirection(state) {
+					consecutive = 1
+				} else {
+					continue
+				}
+			}
+			if consecutive > 10 {
+				continue
+			}
+
+			newState := travelState{newCoords, direction, consecutive}
+
+			nextStates[newState] = difficultyAt(grid, newCoords)
+		}
+
+		return nextStates
+	}
+
+	estimate := func(state travelState) int {
+		return distanceFromEnd(grid, state)
+	}
+
+	return lib.AStar(
+		initialState,
+		done,
+		next,
+		estimate,
+	)
 }
 
 func main() {
 	lib.AssertEqual(102, solvePart1(TestString))
-	// lib.AssertEqual(94, solvePart2(TestString))
-
-	// lib.AssertEqual(1, solvePart1(SmallTestString))
-	// lib.AssertEqual(1, solvePart2(SmallTestString))
+	lib.AssertEqual(94, solvePart2(TestString))
 
 	// dataString := lib.GetDataString(DataFile)
 	// result1 := solvePart1(dataString)
