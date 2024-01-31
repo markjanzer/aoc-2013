@@ -111,18 +111,18 @@ func (state travelState) moveValidDirections(grid [][]byte) []travelState {
 			continue
 		}
 
-		var newWentDirection int
+		var consecutive int
 		if direction == state.lastDirection {
-			newWentDirection = state.wentDirection + 1
+			consecutive = state.wentDirection + 1
 		} else {
-			newWentDirection = 1
+			consecutive = 1
 		}
-		if newWentDirection > 3 {
+		if consecutive > 3 {
 			continue
 		}
 
 		newDifficulty := state.difficulty + difficultyAt(grid, newCoords)
-		newState := travelState{newCoords, newDifficulty, direction, newWentDirection}
+		newState := travelState{newCoords, newDifficulty, direction, consecutive}
 
 		validDirections = append(validDirections, newState)
 	}
@@ -155,21 +155,55 @@ func solvePart1(input string) int {
 
 	initialState := []travelState{{coordinates{0, 0}, 0, "none", 0}}
 
-	done := func(state travelState) bool {
-		return state.complete(grid)
+	distanceFromEnd := func(state travelState) int {
+		return (xMax - state.coords.x) + (yMax - state.coords.y)
 	}
 
-	next := func(state travelState, nextStates map[travelState]int) {
-		for _, newState := range state.moveValidDirections(grid) {
-			nextStates[newState] = difficultyAt(grid, newState.coords)
+	done := func(state travelState) bool {
+		return distanceFromEnd(state) == 0
+	}
+
+	next := func(state travelState) (nextStates map[travelState]int) {
+		nextStates = make(map[travelState]int)
+		directions := []string{"N", "E", "S", "W"}
+
+		for _, direction := range directions {
+			// We cannot go the opposite direction of the last step
+			if direction == oppositeDirection(state.lastDirection) {
+				continue
+			}
+
+			// We cannot go out of bounds of the grid
+			newCoords := moveCoords(direction, state.coords)
+			if newCoords.x < 0 || newCoords.y < 0 || newCoords.x > len(grid[0])-1 || newCoords.y > len(grid)-1 {
+				continue
+			}
+
+			var consecutive int
+			if direction == state.lastDirection {
+				consecutive = state.wentDirection + 1
+			} else {
+				consecutive = 1
+			}
+			if consecutive > 3 {
+				continue
+			}
+
+			// newDifficulty := state.difficulty + difficultyAt(grid, newCoords)
+			newState := travelState{newCoords, 0, direction, consecutive}
+
+			nextStates[newState] = difficultyAt(grid, newCoords)
+			// nextStates[newState] = newDifficulty
 		}
+
+		return nextStates
 	}
 
 	estimate := func(state travelState) int {
-		return priority(state, grid)
+		return state.difficulty + distanceFromEnd(state)
 	}
 
-	return lib.BStar(
+	return lib.AStar(
 		initialState,
 		done,
 		next,
