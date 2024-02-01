@@ -35,24 +35,31 @@ func PrintGrid(grid [][]byte) {
 
 // Flips the x and y axis of a grid
 func FlipGrid(grid [][]byte) [][]byte {
-	// Dimensions of the original grid
-	x := len(grid[0])
-	y := len(grid)
+	cols := len(grid[0])
+	rows := len(grid)
 
-	// Create a new grid with flipped dimensions
-	newGrid := make([][]byte, x)
-	for i := range newGrid {
-		newGrid[i] = make([]byte, y)
-	}
+	newGrid := CreateGrid(cols, rows, 0)
 
 	// Assign values from the original grid to the new grid
-	for i := 0; i < y; i++ {
-		for j := 0; j < x; j++ {
+	for i := 0; i < rows; i++ {
+		for j := 0; j < cols; j++ {
 			newGrid[j][i] = grid[i][j]
 		}
 	}
 
 	return newGrid
+}
+
+func CreateGrid(rows, cols int, defaultValue byte) [][]byte {
+	grid := make([][]byte, rows)
+	for i := range grid {
+		grid[i] = make([]byte, cols)
+		for j := range grid[i] {
+			grid[i][j] = defaultValue
+		}
+	}
+
+	return grid
 }
 
 func ReverseGrid(grid [][]byte) [][]byte {

@@ -2,7 +2,6 @@ package main
 
 import (
 	"advent-of-code-2023/lib"
-	"fmt"
 	"strings"
 )
 
@@ -196,10 +195,10 @@ func solvePart2(input string) (sum int) {
 }
 
 func main() {
-	// lib.AssertEqual(5, solvePart1(SmallTestString))
-	// lib.AssertEqual(405, solvePart1(TestString))
-	// lib.AssertEqual(300, solvePart2(SmallTestString))
-	// lib.AssertEqual(400, solvePart2(TestString))
+	lib.AssertEqual(5, solvePart1(SmallTestString))
+	lib.AssertEqual(405, solvePart1(TestString))
+	lib.AssertEqual(300, solvePart2(SmallTestString))
+	lib.AssertEqual(400, solvePart2(TestString))
 
 	// lib.AssertEqual(1, solvePart2(SmallTestString))
 
@@ -207,7 +206,7 @@ func main() {
 	// result1 := solvePart1(dataString)
 	// fmt.Println(result1)
 
-	dataString := lib.GetDataString(DataFile)
-	result2 := solvePart2(dataString)
-	fmt.Println(result2)
+	// dataString := lib.GetDataString(DataFile)
+	// result2 := solvePart2(dataString)
+	// fmt.Println(result2)
 }

@@ -24,7 +24,7 @@ func (heap *Heap[T]) Insert(item T) Heap[T] {
 	heap.items = append(heap.items, item)
 
 	// Compare the new item with its parent, and swap if necessary
-	i := heap.size()
+	i := heap.Size()
 	for i/2 > 0 {
 		if heap.before(heap.items[i], heap.items[i/2]) {
 			heap.items[i], heap.items[i/2] = heap.items[i/2], heap.items[i]
@@ -41,16 +41,16 @@ func (heap *Heap[T]) Pop() T {
 	result := heap.items[1]
 
 	// Promote last item to the top
-	heap.items[1] = heap.items[heap.size()]
-	heap.items = heap.items[:heap.size()]
+	heap.items[1] = heap.items[heap.Size()]
+	heap.items = heap.items[:heap.Size()]
 
 	// Compare the top item with its smallest child, and swap if necessary
 	i := 1
-	for i*2 <= heap.size() {
+	for i*2 <= heap.Size() {
 		leftChildIndex := i * 2
 		rightChildIndex := i*2 + 1
 		var smallestChildIndex int
-		if rightChildIndex <= heap.size() && heap.before(heap.items[rightChildIndex], heap.items[leftChildIndex]) {
+		if rightChildIndex <= heap.Size() && heap.before(heap.items[rightChildIndex], heap.items[leftChildIndex]) {
 			smallestChildIndex = rightChildIndex
 		} else {
 			smallestChildIndex = leftChildIndex
@@ -67,6 +67,6 @@ func (heap *Heap[T]) Pop() T {
 	return result
 }
 
-func (heap Heap[T]) size() int {
+func (heap Heap[T]) Size() int {
 	return len(heap.items) - 1
 }

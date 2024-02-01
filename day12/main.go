@@ -80,7 +80,6 @@ func solve(springsMap []byte, damagedSpringsCount int, groups []int) int {
 	contiguousDamagedSprings := groups[0]
 
 	for i, b := range springsMap {
-		solveIterationsCount++
 		if string(b) == "." && damagedSpringsCount > 0 {
 			if damagedSpringsCount == contiguousDamagedSprings {
 				return solveWithCache(springsMap[(i+1):], 0, groups[1:])
@@ -164,7 +163,7 @@ func solvePart2(input string) (sum int) {
 }
 
 func main() {
-	// lib.AssertEqual(21, solvePart1(TestString))
+	lib.AssertEqual(21, solvePart1(TestString))
 	// lib.AssertEqual(1, solveLine2(SmallTest1))
 	// lib.AssertEqual(16384, solveLine2(SmallTest2))
 	// lib.AssertEqual(1, solveLine2(SmallTest3))
@@ -178,7 +177,7 @@ func main() {
 	// result1 := solvePart1(dataString)
 	// fmt.Println(result1)
 
-	dataString := lib.GetDataString(DataFile)
-	result2 := solvePart2(dataString)
-	fmt.Println(result2)
+	// dataString := lib.GetDataString(DataFile)
+	// result2 := solvePart2(dataString)
+	// fmt.Println(result2)
 }

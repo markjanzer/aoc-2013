@@ -321,7 +321,7 @@ func main() {
 
 	// dataString := lib.GetDataString(DataFile)
 	// result1 := solvePart1(dataString)
-	// lib.AssertEqual(6842, result1)
+	// fmt.Println(result1)
 
 	// dataString := lib.GetDataString(DataFile)
 	// result2 := solvePart2(dataString)
