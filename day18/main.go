@@ -49,6 +49,16 @@ const DataFile string = "data.txt"
 	and then we iterate over the grid, counting the edges, and interior.
 	We sum edges and interior squares to get the result.
 
+
+	Update: it's not working. On the first line we we have #### showing the top of
+	the shape, and it's showing everything after it as being inside of it.
+
+	Okay, we can tell if a sequence of edges counts as a wall if their connection points
+	are both up and down. If both are up or both are down then it doesn't count as a wall.
+
+	#            #     #
+	#### (Wall)  ####### (Not a wall) ##### (Not a wall)
+     #                              #   #
 */
 
 type instruction struct {
@@ -136,40 +146,77 @@ func createGridFromInstructions(instructions []instruction) [][]byte {
 		grid[edge.row][edge.col] = lib.CharToByte(Edge)
 	}
 
+	fmt.Println(newRowMax, newColMax)
+
 	return grid
 }
 
+func isWall(grid [][]byte, edgeStart coordinates, edgeLength int) bool {
+	if edgeLength == 1 {
+		return true
+	}
+
+	// The top and bottom rows cannot contain space
+	if edgeStart.row == 0 || edgeStart.row == len(grid)-1 {
+		return false
+	}
+
+	edgeEnd := coordinates{edgeStart.row, edgeStart.col + edgeLength - 1}
+
+	return connectedVerticalEdges(grid, edgeStart) != connectedVerticalEdges(grid, edgeEnd)
+}
+
+// For a given edge, return whether it has a connection up "U" or down "D"
+func connectedVerticalEdges(grid [][]byte, edge coordinates) string {
+	if string(grid[edge.row-1][edge.col]) == Edge {
+		return "U"
+	} else if string(grid[edge.row+1][edge.col]) == Edge {
+		return "D"
+	} else {
+		fmt.Println(edge)
+		panic("Edge has no vertical connections")
+	}
+}
+
 func sumEdgesAndInterior(grid [][]byte) int {
-	gridToPrint := lib.CreateGrid(len(grid), len(grid[0]), lib.CharToByte(Space))
+	// gridToPrint := lib.CreateGrid(len(grid), len(grid[0]), lib.CharToByte(Space))
 
 	edgeSquares := 0
 	interiorSquares := 0
 	for row := range grid {
-		edgesPassed := 0
-		previousSquareWasEdge := false
+		wallsPassed := 0
+		edgeStart := coordinates{}
+		edgeLength := 0
+
 		for col := range grid[row] {
+			fmt.Println(row, col)
 			switch string(grid[row][col]) {
-			case Edge:
-				if !previousSquareWasEdge {
-					edgesPassed++
-				}
-				edgeSquares++
-				gridToPrint[row][col] = lib.CharToByte(Edge)
-				previousSquareWasEdge = true
 			case Space:
-				if edgesPassed%2 != 0 {
-					interiorSquares++
-					gridToPrint[row][col] = lib.CharToByte(Edge)
+				if edgeLength != 0 {
+					if isWall(grid, edgeStart, edgeLength) {
+						wallsPassed++
+					}
+					edgeLength = 0
 				}
-				previousSquareWasEdge = false
+				if wallsPassed%2 != 0 {
+					interiorSquares++
+					// gridToPrint[row][col] = lib.CharToByte(Edge)
+				}
+			case Edge:
+				if edgeLength == 0 {
+					edgeStart = coordinates{row, col}
+				}
+				edgeLength++
+				edgeSquares++
+				// gridToPrint[row][col] = lib.CharToByte(Edge)
 			default:
-				fmt.Println("Invalid character in grid")
 				fmt.Println(grid[row][col])
+				panic("Invalid character in grid")
 			}
 		}
 	}
 
-	lib.PrintGrid(gridToPrint)
+	// lib.PrintGrid(gridToPrint)
 
 	return edgeSquares + interiorSquares
 }
@@ -186,22 +233,56 @@ func solvePart1(input string) int {
 /*
 	Part 2 Notes
 
+	Turn hexadecimal into numbers
+	Run the same solution (but probably needs to be more efficient)
 */
 
+var digitToDirection = map[string]string{
+	"0": "R",
+	"1": "D",
+	"2": "L",
+	"3": "U",
+}
+
+func getInstructionsPart2(input string) (instructions []instruction) {
+	lines := strings.Split(input, "\n")
+
+	for _, line := range lines {
+		parts := strings.Split(line, "#")
+		// Get the the hex without the trailing parenthesis
+		fullHex := parts[1][:len(parts[1])-1]
+		numberHex := fullHex[:len(fullHex)-1]
+		direction := digitToDirection[string(fullHex[len(fullHex)-1])]
+		distance, _ := strconv.ParseInt(numberHex, 16, 64)
+		intDistance := int(distance)
+
+		instructions = append(instructions, instruction{direction, intDistance})
+	}
+
+	fmt.Println(instructions)
+
+	return
+}
+
 func solvePart2(input string) int {
-	return 0
+	instructions := getInstructionsPart2(input)
+	grid := createGridFromInstructions(instructions)
+
+	// lib.PrintGrid(grid)
+	// fmt.Println()
+	return sumEdgesAndInterior(grid)
 }
 
 func main() {
 	// lib.AssertEqual(62, solvePart1(TestString))
-	// lib.AssertEqual(1, solvePart2(TestString))
+	lib.AssertEqual(952408144115, solvePart2(TestString))
 
 	// lib.AssertEqual(1, solvePart1(SmallTestString))
 	// lib.AssertEqual(1, solvePart2(SmallTestString))
 
-	dataString := lib.GetDataString(DataFile)
-	result1 := solvePart1(dataString)
-	fmt.Println(result1)
+	// dataString := lib.GetDataString(DataFile)
+	// result1 := solvePart1(dataString)
+	// fmt.Println(result1)
 
 	// dataString := lib.GetDataString(DataFile)
 	// result2 := solvePart2(dataString)
