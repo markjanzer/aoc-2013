@@ -99,8 +99,54 @@ func move(coords coordinates, direction string) coordinates {
 	}
 }
 
+func moveDistance(coords coordinates, direction string, distance int) coordinates {
+	switch direction {
+	case "U":
+		return coordinates{coords.row - distance, coords.col}
+	case "D":
+		return coordinates{coords.row + distance, coords.col}
+	case "L":
+		return coordinates{coords.row, coords.col - distance}
+	case "R":
+		return coordinates{coords.row, coords.col + distance}
+	default:
+		panic("Invalid direction")
+	}
+}
+
 const Edge = "#"
 const Space = "."
+
+func createCoordsFromInstructions(instructions []instruction) ([]coordinates, int) {
+	currentCoords := coordinates{0, 0}
+	coords := []coordinates{currentCoords}
+	borderSize := 0
+
+	for _, instruction := range instructions {
+		currentCoords := moveDistance(currentCoords, instruction.direction, instruction.distance)
+		coords = append(coords, currentCoords)
+		fmt.Println(instruction)
+		fmt.Println(currentCoords)
+		borderSize += instruction.distance
+	}
+
+	fmt.Println(borderSize)
+	fmt.Println(coords)
+
+	return coords, borderSize
+}
+
+func shoelaceFormula(coords []coordinates) int {
+	sum := 0
+	for i := 0; i < len(coords)-1; i++ {
+		currentCoords := coords[i]
+		nextCoords := coords[i+1]
+		sum += currentCoords.row*nextCoords.col - currentCoords.col*nextCoords.row
+	}
+
+	fmt.Println(sum)
+	return lib.AbsInt(sum) / 2
+}
 
 func createGridFromInstructions(instructions []instruction) [][]byte {
 	minCol := 0
@@ -223,11 +269,13 @@ func sumEdgesAndInterior(grid [][]byte) int {
 
 func solvePart1(input string) int {
 	instructions := getInstructions(input)
-	grid := createGridFromInstructions(instructions)
+	coordinates, borderSize := createCoordsFromInstructions(instructions)
+	return shoelaceFormula(coordinates) + borderSize
+	// grid := createGridFromInstructions(instructions)
 
-	lib.PrintGrid(grid)
-	fmt.Println()
-	return sumEdgesAndInterior(grid)
+	// lib.PrintGrid(grid)
+	// fmt.Println()
+	// return sumEdgesAndInterior(grid)
 }
 
 /*
@@ -266,16 +314,13 @@ func getInstructionsPart2(input string) (instructions []instruction) {
 
 func solvePart2(input string) int {
 	instructions := getInstructionsPart2(input)
-	grid := createGridFromInstructions(instructions)
-
-	// lib.PrintGrid(grid)
-	// fmt.Println()
-	return sumEdgesAndInterior(grid)
+	coordinates, borderSize := createCoordsFromInstructions(instructions)
+	return shoelaceFormula(coordinates) + borderSize
 }
 
 func main() {
-	// lib.AssertEqual(62, solvePart1(TestString))
-	lib.AssertEqual(952408144115, solvePart2(TestString))
+	lib.AssertEqual(62, solvePart1(TestString))
+	// lib.AssertEqual(952408144115, solvePart2(TestString))
 
 	// lib.AssertEqual(1, solvePart1(SmallTestString))
 	// lib.AssertEqual(1, solvePart2(SmallTestString))
