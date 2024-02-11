@@ -83,7 +83,6 @@ func sumPart(p part) int {
 }
 
 func executeString(instruction string, p part, workflows workflowMap) bool {
-	// fmt.Println("in executeString, instruction: ", instruction)
 	if instruction == "R" {
 		return false
 	} else if instruction == "A" {
@@ -116,9 +115,7 @@ func comparePart(p part, key, comparison string, value int) bool {
 }
 
 func followWorkflow(p part, workflow []string, workflows workflowMap) bool {
-	// fmt.Println(workflow)
 	for _, rule := range workflow {
-		// fmt.Println(p, rule)
 		if !strings.Contains(rule, ":") {
 			return executeString(rule, p, workflows)
 		} else {
@@ -165,10 +162,117 @@ func solvePart1(input string) int {
 /*
 	Part 2 Notes
 
+	Change the structure of parts to have xMin xMax, mMin, mMax etc.
+	Change partSum to partPossibilities, which multiplies the lengths of each of the values
+	Change the logic so that we start out with potentialParts with ranges from 1 to 4000 for every value
+		When we reach a coniditional, we do recursive logic and return the possibilities of each added together
+
+	We're going to need to be able to start at different rules within the workflows for this to work
 */
 
+type partPossibilities struct {
+	xMin int
+	xMax int
+	mMin int
+	mMax int
+	aMin int
+	aMax int
+	sMin int
+	sMax int
+}
+
+func originalPossibilities() partPossibilities {
+	return partPossibilities{1, 4000, 1, 4000, 1, 4000, 1, 4000}
+}
+
+func (p partPossibilities) possibilityCount() int {
+	return (p.xMax - p.xMin + 1) * (p.mMax - p.mMin + 1) * (p.aMax - p.aMin + 1) * (p.sMax - p.sMin + 1)
+}
+
+func splitPossibility(p partPossibilities, key, comparison string, value int) (partPossibilities, partPossibilities) {
+	truePossibility := p
+	falsePossibility := p
+
+	switch key {
+	case "x":
+		if comparison == "<" {
+			truePossibility.xMax = lib.Min(truePossibility.xMax, value-1)
+			falsePossibility.xMin = lib.Max(truePossibility.xMin, value)
+		} else {
+			truePossibility.xMin = lib.Max(truePossibility.xMin, value+1)
+			falsePossibility.xMax = lib.Min(truePossibility.xMax, value)
+		}
+	case "m":
+		if comparison == "<" {
+			truePossibility.mMax = lib.Min(truePossibility.mMax, value-1)
+			falsePossibility.mMin = lib.Max(truePossibility.mMin, value)
+		} else {
+			truePossibility.mMin = lib.Max(truePossibility.mMin, value+1)
+			falsePossibility.mMax = lib.Min(truePossibility.mMax, value)
+		}
+	case "a":
+		if comparison == "<" {
+			truePossibility.aMax = lib.Min(truePossibility.aMax, value-1)
+			falsePossibility.aMin = lib.Max(truePossibility.aMin, value)
+		} else {
+			truePossibility.aMin = lib.Max(truePossibility.aMin, value+1)
+			falsePossibility.aMax = lib.Min(truePossibility.aMax, value)
+		}
+	case "s":
+		if comparison == "<" {
+			truePossibility.sMax = lib.Min(truePossibility.sMax, value-1)
+			falsePossibility.sMin = lib.Max(truePossibility.sMin, value)
+		} else {
+			truePossibility.sMin = lib.Max(truePossibility.sMin, value+1)
+			falsePossibility.sMax = lib.Min(truePossibility.sMax, value)
+		}
+	}
+
+	return truePossibility, falsePossibility
+}
+
+func executeString2(instruction string, p partPossibilities, workflows workflowMap) int {
+	if instruction == "R" {
+		return 0
+	} else if instruction == "A" {
+		return p.possibilityCount()
+	} else {
+		return possibilities(p, workflows[instruction], 0, workflows)
+	}
+}
+
+func possibilities(p partPossibilities, workflow []string, ruleIndex int, workflows workflowMap) int {
+	rule := workflow[ruleIndex]
+
+	if !strings.Contains(rule, ":") {
+		return executeString2(rule, p, workflows)
+	} else {
+		splitString := strings.Split(rule, ":")
+		conditional := splitString[0]
+		execute := splitString[1]
+		key, comparison, valueString := "", "", ""
+		if strings.Contains(conditional, "<") {
+			key = strings.Split(conditional, "<")[0]
+			comparison = "<"
+			valueString = strings.Split(conditional, "<")[1]
+		} else {
+			key = strings.Split(conditional, ">")[0]
+			comparison = ">"
+			valueString = strings.Split(conditional, ">")[1]
+		}
+		value, _ := strconv.Atoi(valueString)
+
+		truePossibility, falsePossibility := splitPossibility(p, key, comparison, value)
+		return executeString2(execute, truePossibility, workflows) + possibilities(falsePossibility, workflow, ruleIndex+1, workflows)
+	}
+}
+
 func solvePart2(input string) int {
-	return 0
+	groups := strings.Split(input, "\n\n")
+	workflows := parseWorkflows(groups[0])
+	allPossibleParts := originalPossibilities()
+
+	return possibilities(allPossibleParts, workflows["in"], 0, workflows)
 }
 
 func main() {
