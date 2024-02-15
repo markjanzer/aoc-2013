@@ -68,7 +68,8 @@ type module struct {
 // 	state string
 // }
 
-func pulseModule(toMod module, fromModName string, pulse string, queue *[]instruction) {
+func pulseModule(toModName, fromModName string, pulse string, queue *[]instruction, modules *map[string]module) {
+	toMod := (*modules)[toModName]
 	if toMod.moduleType == "broadcaster" {
 		for _, target := range toMod.targets {
 			*queue = append(*queue, instruction{target, toMod.name, pulse})
@@ -106,6 +107,9 @@ func pulseModule(toMod module, fromModName string, pulse string, queue *[]instru
 			}
 		}
 	}
+
+	// Save changes to modules
+	(*modules)[toModName] = toMod
 }
 
 func solvePart1(input string) int {
@@ -152,23 +156,27 @@ func solvePart1(input string) int {
 	lowPulseCount := 0
 	highPulseCount := 0
 
-	queue = append(queue, instruction{"broadcaster", "button", "low"})
-	for len(queue) > 0 {
-		instruction := queue[0]
-		queue = queue[1:]
+	i := 0
+	for i < 1000 {
+		queue = append(queue, instruction{"broadcaster", "button", "low"})
+		for len(queue) > 0 {
+			instruction := queue[0]
+			queue = queue[1:]
 
-		fmt.Println(instruction.fromMod, instruction.pulse, instruction.toMod)
+			// fmt.Println(instruction.fromMod, instruction.pulse, instruction.toMod)
 
-		if instruction.pulse == "low" {
-			lowPulseCount++
-		} else if instruction.pulse == "high" {
-			highPulseCount++
+			if instruction.pulse == "low" {
+				lowPulseCount++
+			} else if instruction.pulse == "high" {
+				highPulseCount++
+			}
+
+			pulseModule(instruction.toMod, instruction.fromMod, instruction.pulse, &queue, &modules)
 		}
-
-		pulseModule(modules[instruction.toMod], instruction.fromMod, instruction.pulse, &queue)
+		i++
 	}
 
-	fmt.Println(lowPulseCount, highPulseCount)
+	// fmt.Println(lowPulseCount, highPulseCount)
 
 	return lowPulseCount * highPulseCount
 }
@@ -184,17 +192,17 @@ func solvePart2(input string) int {
 
 func main() {
 	// Only running once, it should be 8 * 4
-	lib.AssertEqual(32, solvePart1(TestString))
-	// lib.AssertEqual(32000000, solvePart1(TestString))
-	// lib.AssertEqual(11687500, solvePart1(TestString2))
+	// lib.AssertEqual(32, solvePart1(TestString))
+	lib.AssertEqual(32000000, solvePart1(TestString))
+	lib.AssertEqual(11687500, solvePart1(TestString2))
 	// lib.AssertEqual(1, solvePart2(TestString))
 
 	// lib.AssertEqual(1, solvePart1(SmallTestString))
 	// lib.AssertEqual(1, solvePart2(SmallTestString))
 
-	// dataString := lib.GetDataString(DataFile)
-	// result1 := solvePart1(dataString)
-	// fmt.Println(result1)
+	dataString := lib.GetDataString(DataFile)
+	result1 := solvePart1(dataString)
+	fmt.Println(result1)
 
 	// dataString := lib.GetDataString(DataFile)
 	// result2 := solvePart2(dataString)
