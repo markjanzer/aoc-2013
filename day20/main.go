@@ -68,7 +68,7 @@ type module struct {
 // 	state string
 // }
 
-func pulseModule(toModName, fromModName string, pulse string, queue *[]instruction, modules *map[string]module) bool {
+func pulseModule(toModName, fromModName string, pulse string, queue *[]instruction, modules *map[string]module) {
 	toMod := (*modules)[toModName]
 	if toMod.moduleType == "broadcaster" {
 		for _, target := range toMod.targets {
@@ -110,17 +110,9 @@ func pulseModule(toModName, fromModName string, pulse string, queue *[]instructi
 
 	// Save changes to modules
 	(*modules)[toModName] = toMod
-
-	if toModName == "rx" && pulse == "low" {
-		return true
-	} else {
-		return false
-	}
 }
 
-func solvePart1(input string) int {
-	queue := []instruction{}
-
+func createModules(input string) map[string]module {
 	modules := map[string]module{}
 
 	for _, line := range strings.Split(input, "\n") {
@@ -159,36 +151,42 @@ func solvePart1(input string) int {
 		}
 	}
 
+	return modules
+}
+
+func runQueueUntilEmpty(queue *[]instruction, modules *map[string]module) (lowPulseCount, highPulseCount int) {
+	for len(*queue) > 0 {
+		instruction := (*queue)[0]
+		*queue = (*queue)[1:]
+
+		if instruction.pulse == "low" {
+			lowPulseCount++
+		} else if instruction.pulse == "high" {
+			highPulseCount++
+		}
+
+		pulseModule(instruction.toMod, instruction.fromMod, instruction.pulse, queue, modules)
+	}
+	return lowPulseCount, highPulseCount
+}
+
+func solvePart1(input string) int {
+	queue := []instruction{}
+	modules := createModules(input)
+
 	lowPulseCount := 0
 	highPulseCount := 0
 
 	i := 0
-	for i < 10000000 {
+	for i < 1000 {
 		queue = append(queue, instruction{"broadcaster", "button", "low"})
-		for len(queue) > 0 {
-			instruction := queue[0]
-			queue = queue[1:]
-
-			// fmt.Println(instruction.fromMod, instruction.pulse, instruction.toMod)
-
-			if instruction.pulse == "low" {
-				lowPulseCount++
-			} else if instruction.pulse == "high" {
-				highPulseCount++
-			}
-
-			rxLowPulse := pulseModule(instruction.toMod, instruction.fromMod, instruction.pulse, &queue, &modules)
-			if rxLowPulse {
-				return i + 1
-			}
-		}
+		lc, hc := runQueueUntilEmpty(&queue, &modules)
+		lowPulseCount += lc
+		highPulseCount += hc
 		i++
 	}
 
-	// fmt.Println(lowPulseCount, highPulseCount)
-
-	return i
-	// return lowPulseCount * highPulseCount
+	return lowPulseCount * highPulseCount
 }
 
 /*
@@ -196,25 +194,45 @@ func solvePart1(input string) int {
 
 */
 
+func runQueueUntilEmpty2(queue *[]instruction, modules *map[string]module) bool {
+	for len(*queue) > 0 {
+		instruction := (*queue)[0]
+		*queue = (*queue)[1:]
+
+		if instruction.toMod == "rx" && instruction.pulse == "low" {
+			return true
+		}
+
+		pulseModule(instruction.toMod, instruction.fromMod, instruction.pulse, queue, modules)
+	}
+	return false
+}
+
 func solvePart2(input string) int {
-	return 0
+	queue := []instruction{}
+	modules := createModules(input)
+
+	i := 0
+	for i < 1000 {
+		queue = append(queue, instruction{"broadcaster", "button", "low"})
+		if sentRxLow := runQueueUntilEmpty2(&queue, &modules); sentRxLow {
+			return i + 1
+		}
+		i++
+	}
+
+	return -1
 }
 
 func main() {
-	// Only running once, it should be 8 * 4
-	// lib.AssertEqual(32, solvePart1(TestString))
-	// lib.AssertEqual(32000000, solvePart1(TestString))
-	// lib.AssertEqual(11687500, solvePart1(TestString2))
-	// lib.AssertEqual(1, solvePart2(TestString))
-
-	// lib.AssertEqual(1, solvePart1(SmallTestString))
-	// lib.AssertEqual(1, solvePart2(SmallTestString))
-
-	dataString := lib.GetDataString(DataFile)
-	result1 := solvePart1(dataString)
-	fmt.Println(result1)
+	lib.AssertEqual(32000000, solvePart1(TestString))
+	lib.AssertEqual(11687500, solvePart1(TestString2))
 
 	// dataString := lib.GetDataString(DataFile)
-	// result2 := solvePart2(dataString)
-	// fmt.Println(result2)
+	// result1 := solvePart1(dataString)
+	// fmt.Println(result1)
+
+	dataString := lib.GetDataString(DataFile)
+	result2 := solvePart2(dataString)
+	fmt.Println(result2)
 }
