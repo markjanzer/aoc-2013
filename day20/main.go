@@ -56,36 +56,24 @@ type module struct {
 	memory     map[string]string
 }
 
-// // Implement this to refactor a little
-// func (mod module)sendPulse(pulse string, queue []instruction) {
-// 	for _, target := range toMod.targets {
-// 		queue = append(queue, instruction{target, pulse})
-// 	}
-// }
-
-// type flipFlop struct {
-// 	name string
-// 	state string
-// }
+func (toMod module) sendPulse(pulse string, queue *[]instruction) {
+	for _, target := range toMod.targets {
+		*queue = append((*queue), instruction{target, toMod.name, pulse})
+	}
+}
 
 func pulseModule(toModName, fromModName string, pulse string, queue *[]instruction, modules *map[string]module) {
 	toMod := (*modules)[toModName]
 	if toMod.moduleType == "broadcaster" {
-		for _, target := range toMod.targets {
-			*queue = append(*queue, instruction{target, toMod.name, pulse})
-		}
+		toMod.sendPulse(pulse, queue)
 	} else if toMod.moduleType == "flip-flop" {
 		if pulse == "low" {
 			if toMod.state == "off" {
 				toMod.state = "on"
-				for _, target := range toMod.targets {
-					*queue = append(*queue, instruction{target, toMod.name, "high"})
-				}
+				toMod.sendPulse("high", queue)
 			} else if toMod.state == "on" {
 				toMod.state = "off"
-				for _, target := range toMod.targets {
-					*queue = append(*queue, instruction{target, toMod.name, "low"})
-				}
+				toMod.sendPulse("low", queue)
 			}
 		}
 	} else if toMod.moduleType == "conjunction" {
@@ -98,13 +86,9 @@ func pulseModule(toModName, fromModName string, pulse string, queue *[]instructi
 			}
 		}
 		if allHigh {
-			for _, target := range toMod.targets {
-				*queue = append(*queue, instruction{target, toMod.name, "low"})
-			}
+			toMod.sendPulse("low", queue)
 		} else {
-			for _, target := range toMod.targets {
-				*queue = append(*queue, instruction{target, toMod.name, "high"})
-			}
+			toMod.sendPulse("high", queue)
 		}
 	}
 
@@ -208,12 +192,21 @@ func runQueueUntilEmpty2(queue *[]instruction, modules *map[string]module) bool 
 	return false
 }
 
+// func serializeModules(modules map[string]module) string {
+// 	serialized := ""
+// 	for _, mod := range modules {
+// 		serialized += fmt.Sprintf("%s: %s, %s\n", mod.name, mod.state, mod.memory)
+// 	}
+// 	return serialized
+// }
+
 func solvePart2(input string) int {
 	queue := []instruction{}
 	modules := createModules(input)
 
 	i := 0
 	for i < 1000 {
+		// fmt.Println(serializeModules(modules))
 		queue = append(queue, instruction{"broadcaster", "button", "low"})
 		if sentRxLow := runQueueUntilEmpty2(&queue, &modules); sentRxLow {
 			return i + 1
