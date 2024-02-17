@@ -68,7 +68,7 @@ type module struct {
 // 	state string
 // }
 
-func pulseModule(toModName, fromModName string, pulse string, queue *[]instruction, modules *map[string]module) {
+func pulseModule(toModName, fromModName string, pulse string, queue *[]instruction, modules *map[string]module) bool {
 	toMod := (*modules)[toModName]
 	if toMod.moduleType == "broadcaster" {
 		for _, target := range toMod.targets {
@@ -110,6 +110,12 @@ func pulseModule(toModName, fromModName string, pulse string, queue *[]instructi
 
 	// Save changes to modules
 	(*modules)[toModName] = toMod
+
+	if toModName == "rx" && pulse == "low" {
+		return true
+	} else {
+		return false
+	}
 }
 
 func solvePart1(input string) int {
@@ -157,7 +163,7 @@ func solvePart1(input string) int {
 	highPulseCount := 0
 
 	i := 0
-	for i < 1000 {
+	for i < 10000000 {
 		queue = append(queue, instruction{"broadcaster", "button", "low"})
 		for len(queue) > 0 {
 			instruction := queue[0]
@@ -171,14 +177,18 @@ func solvePart1(input string) int {
 				highPulseCount++
 			}
 
-			pulseModule(instruction.toMod, instruction.fromMod, instruction.pulse, &queue, &modules)
+			rxLowPulse := pulseModule(instruction.toMod, instruction.fromMod, instruction.pulse, &queue, &modules)
+			if rxLowPulse {
+				return i + 1
+			}
 		}
 		i++
 	}
 
 	// fmt.Println(lowPulseCount, highPulseCount)
 
-	return lowPulseCount * highPulseCount
+	return i
+	// return lowPulseCount * highPulseCount
 }
 
 /*
@@ -193,8 +203,8 @@ func solvePart2(input string) int {
 func main() {
 	// Only running once, it should be 8 * 4
 	// lib.AssertEqual(32, solvePart1(TestString))
-	lib.AssertEqual(32000000, solvePart1(TestString))
-	lib.AssertEqual(11687500, solvePart1(TestString2))
+	// lib.AssertEqual(32000000, solvePart1(TestString))
+	// lib.AssertEqual(11687500, solvePart1(TestString2))
 	// lib.AssertEqual(1, solvePart2(TestString))
 
 	// lib.AssertEqual(1, solvePart1(SmallTestString))
