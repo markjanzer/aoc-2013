@@ -150,25 +150,6 @@ func getDirection(directions []string, count int) string {
 	return directions[inputIndex]
 }
 
-func lcm(a, b uint64) uint64 {
-	return a * b / gcd(a, b)
-}
-
-func gcd(a, b uint64) uint64 {
-	for b != 0 {
-		a, b = b, a%b
-	}
-	return a
-}
-
-func lcmMultiple(numbers []uint64) uint64 {
-	result := numbers[0]
-	for _, num := range numbers[1:] {
-		result = lcm(result, num)
-	}
-	return result
-}
-
 const MaxIterations int = 10000000
 
 func solvePart2(input string) uint64 {
@@ -216,7 +197,7 @@ func solvePart2(input string) uint64 {
 		loops = append(loops, uint64(journey.loop()))
 	}
 
-	result := lcmMultiple(loops)
+	result := lib.LcmOfSlice(loops)
 
 	// Only the first value is getting set to be true
 	// fmt.Println(journeys)
@@ -235,7 +216,7 @@ func main() {
 	// fmt.Println(result1)
 
 	// fmt.Println(gcd(200, 80))
-	// fmt.Println(lcmMultiple([]uint64{3, 6, 10}))
+	// fmt.Println(lib.LcmOfSlice([]uint64{3, 6, 10}))
 
 	dataString := lib.GetDataString(DataFile)
 	result2 := solvePart2(dataString)
