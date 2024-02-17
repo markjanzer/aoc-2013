@@ -90,6 +90,10 @@ func pulseModule(toModName, fromModName string, pulse string, queue *[]instructi
 		} else {
 			toMod.sendPulse("high", queue)
 		}
+	} else {
+		// fmt.Println("In else")
+		// fmt.Println("toModName: ", toModName)
+		// fmt.Println(toMod.moduleType)
 	}
 
 	// Save changes to modules
@@ -126,11 +130,15 @@ func createModules(input string) map[string]module {
 		modules[name] = newModule
 	}
 
-	// Set memory for conjunctions
-	for modName, mod := range modules {
+	// Set memory for conjunctions and set module for output
+	for _, mod := range modules {
 		for _, target := range mod.targets {
+			if _, ok := modules[target]; !ok {
+				modules[target] = module{"output", target, []string{}, "off", map[string]string{}}
+			}
+
 			if modules[target].moduleType == "conjunction" {
-				modules[target].memory[modName] = "low"
+				modules[target].memory[mod.name] = "low"
 			}
 		}
 	}
@@ -164,6 +172,7 @@ func solvePart1(input string) int {
 	i := 0
 	for i < 1000 {
 		queue = append(queue, instruction{"broadcaster", "button", "low"})
+
 		lc, hc := runQueueUntilEmpty(&queue, &modules)
 		lowPulseCount += lc
 		highPulseCount += hc
@@ -178,39 +187,54 @@ func solvePart1(input string) int {
 
 */
 
-func runQueueUntilEmpty2(queue *[]instruction, modules *map[string]module) bool {
-	for len(*queue) > 0 {
-		instruction := (*queue)[0]
-		*queue = (*queue)[1:]
-
-		if instruction.toMod == "rx" && instruction.pulse == "low" {
-			return true
+func allKeysHaveValue(track map[string]int) bool {
+	allHaveValue := true
+	for _, trackValue := range track {
+		if trackValue == 0 {
+			allHaveValue = false
+			break
 		}
-
-		pulseModule(instruction.toMod, instruction.fromMod, instruction.pulse, queue, modules)
 	}
-	return false
+	return allHaveValue
 }
 
-// func serializeModules(modules map[string]module) string {
-// 	serialized := ""
-// 	for _, mod := range modules {
-// 		serialized += fmt.Sprintf("%s: %s, %s\n", mod.name, mod.state, mod.memory)
-// 	}
-// 	return serialized
-// }
+func allValues(track map[string]int) []int {
+	values := []int{}
+	for _, trackValue := range track {
+		values = append(values, trackValue)
+	}
+	return values
+}
 
 func solvePart2(input string) int {
 	queue := []instruction{}
 	modules := createModules(input)
 
+	trackLx := map[string]int{}
+	for mod := range modules["lx"].memory {
+		trackLx[mod] = 0
+	}
+
 	i := 0
-	for i < 1000 {
-		// fmt.Println(serializeModules(modules))
+	for i < 10000 {
 		queue = append(queue, instruction{"broadcaster", "button", "low"})
-		if sentRxLow := runQueueUntilEmpty2(&queue, &modules); sentRxLow {
-			return i + 1
+
+		for len(queue) > 0 {
+			instruction := queue[0]
+			queue = queue[1:]
+
+			// Set the cycle that the key sent high pulse to lx
+			if instruction.toMod == "lx" && instruction.pulse == "high" && trackLx[instruction.fromMod] == 0 {
+				trackLx[instruction.fromMod] = i + 1
+			}
+
+			pulseModule(instruction.toMod, instruction.fromMod, instruction.pulse, &queue, &modules)
 		}
+
+		if allKeysHaveValue(trackLx) {
+			return lib.LcmOfSlice(allValues(trackLx))
+		}
+
 		i++
 	}
 
@@ -225,7 +249,7 @@ func main() {
 	// result1 := solvePart1(dataString)
 	// fmt.Println(result1)
 
-	dataString := lib.GetDataString(DataFile)
-	result2 := solvePart2(dataString)
-	fmt.Println(result2)
+	// dataString := lib.GetDataString(DataFile)
+	// result2 := solvePart2(dataString)
+	// fmt.Println(result2)
 }
