@@ -36,23 +36,43 @@ type tile struct {
 	row, col int
 }
 
-func moveAllDirections(position tile, grid [][]byte) (nextPosition []tile) {
+func moveAllDirections(position tile, grid [][]byte, oddity string, tileCache *map[tile]string) (nextPosition []tile) {
 	// Up
-	if position.row > 0 && grid[position.row-1][position.col] != '#' {
-		nextPosition = append(nextPosition, tile{position.row - 1, position.col})
+	nextTile := tile{position.row - 1, position.col}
+	if nextTile.row >= 0 && grid[nextTile.row][nextTile.col] != '#' {
+		if _, ok := (*tileCache)[nextTile]; !ok {
+			(*tileCache)[nextTile] = oddity
+			nextPosition = append(nextPosition, nextTile)
+		}
 	}
+
 	// Down
-	if position.row < len(grid)-1 && grid[position.row+1][position.col] != '#' {
-		nextPosition = append(nextPosition, tile{position.row + 1, position.col})
+	nextTile = tile{position.row + 1, position.col}
+	if nextTile.row < len(grid) && grid[nextTile.row][nextTile.col] != '#' {
+		if _, ok := (*tileCache)[nextTile]; !ok {
+			(*tileCache)[nextTile] = oddity
+			nextPosition = append(nextPosition, nextTile)
+		}
 	}
+
 	// Left
-	if position.col > 0 && grid[position.row][position.col-1] != '#' {
-		nextPosition = append(nextPosition, tile{position.row, position.col - 1})
+	nextTile = tile{position.row, position.col - 1}
+	if nextTile.col >= 0 && grid[nextTile.row][nextTile.col] != '#' {
+		if _, ok := (*tileCache)[nextTile]; !ok {
+			(*tileCache)[nextTile] = oddity
+			nextPosition = append(nextPosition, nextTile)
+		}
 	}
+
 	// Right
-	if position.col < len(grid[0])-1 && grid[position.row][position.col+1] != '#' {
-		nextPosition = append(nextPosition, tile{position.row, position.col + 1})
+	nextTile = tile{position.row, position.col + 1}
+	if nextTile.col < len(grid[0]) && grid[nextTile.row][nextTile.col] != '#' {
+		if _, ok := (*tileCache)[nextTile]; !ok {
+			(*tileCache)[nextTile] = oddity
+			nextPosition = append(nextPosition, nextTile)
+		}
 	}
+
 	return
 }
 
@@ -67,39 +87,46 @@ func startingTile(grid [][]byte) tile {
 	panic("Starting tile not found")
 }
 
-func removeDuplicates(queue []tile) []tile {
-	cache := map[tile]bool{}
-	result := []tile{}
-	for _, position := range queue {
-		if _, ok := cache[position]; ok {
-			continue
-		} else {
-			cache[position] = true
-			result = append(result, position)
-		}
-	}
-	return result
-}
-
 func solvePart1(input string, steps int) int {
 	grid := lib.StringToGrid(input)
 	startingTile := startingTile(grid)
+	tileCache := map[tile]string{}
 
 	queue := []tile{startingTile}
 	for i := 0; i < steps; i++ {
+		oddity := evenOrOdd(i + 1)
 		nextQueue := []tile{}
 		for _, position := range queue {
-			nextQueue = append(nextQueue, moveAllDirections(position, grid)...)
+			nextQueue = append(nextQueue, moveAllDirections(position, grid, oddity, &tileCache)...)
 		}
 
-		queue = removeDuplicates(nextQueue)
+		queue = nextQueue
 	}
 
-	return len(queue)
+	desiredOddity := evenOrOdd(steps)
+	count := 0
+	for _, oddity := range tileCache {
+		if oddity == desiredOddity {
+			count++
+		}
+	}
+	return count
+}
+
+func evenOrOdd(num int) string {
+	if num%2 == 0 {
+		return "even"
+	}
+	return "odd"
 }
 
 /*
 	Part 2 Notes
+
+	Okay, we can start by making part 1 more efficient.
+	Instead of creating a new tile for every possible move, we can keep track of whether
+	the tile was reached in an even or odd number of steps.
+	For now we can have a map of all of all of the tiles and determine if it's even or odd.
 
 */
 
