@@ -116,17 +116,14 @@ func solvePart2(input string) int {
 }
 
 func main() {
-	// lib.AssertEqual(49, solvePart1(SmallTestString))
-	// lib.AssertEqual(49, solvePart2(SmallTestString))
-
 	lib.AssertEqual(288, solvePart1(TestString))
 	lib.AssertEqual(71503, solvePart2(TestString))
 
 	// dataString := lib.GetDataString(DataFile)
-
 	// result1 := solvePart1(dataString)
 	// fmt.Println(result1)
 
+	// dataString := lib.GetDataString(DataFile)
 	// result2 := solvePart2(dataString)
 	// fmt.Println(result2)
 }

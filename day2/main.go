@@ -1,9 +1,8 @@
 package main
 
 import (
-	"bufio"
+	"advent-of-code-2023/lib"
 	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -12,6 +11,12 @@ import (
 const RedMax = 12
 const GreenMax = 13
 const BlueMax = 14
+
+const TestString = `Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
+Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
+Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
+Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
+Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green`
 
 const DataFile string = "./data.txt"
 
@@ -22,29 +27,6 @@ type Set map[string]int
 type Game struct {
 	ID   int
 	Sets []Set
-}
-
-func getGameStrings() ([]string, error) {
-	file, err := os.Open(DataFile)
-
-	if err != nil {
-		fmt.Println("Error:", err)
-		return nil, err
-	}
-	defer file.Close()
-
-	// var games []Game
-	var gameStrings []string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		gameStrings = append(gameStrings, scanner.Text())
-	}
-
-	if err := scanner.Err(); err != nil {
-		fmt.Println("Error:", err)
-	}
-
-	return gameStrings, nil
 }
 
 var validColors = []string{"red", "green", "blue"}
@@ -79,7 +61,7 @@ func parseGame(gameString string) (Game, error) {
 			}
 
 			if _, valid := validColorsMap[color]; !valid {
-				return game, fmt.Errorf("Invalid color: %s", color)
+				return game, fmt.Errorf("invalid color: %s", color)
 			}
 
 			set[color] = count
@@ -132,37 +114,55 @@ func gamePower(game Game) int {
 	return minimumSet["red"] * minimumSet["green"] * minimumSet["blue"]
 }
 
-func main() {
-	gameStrings, err := getGameStrings()
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
+func makeGames(input string) (games []Game) {
+	gameStrings := strings.Split(input, "\n")
 
-	games := make([]Game, 0, len(gameStrings))
 	for _, gameString := range gameStrings {
 		game, err := parseGame(gameString)
 		if err != nil {
 			fmt.Println("Error:", err)
-			return
+			panic(err)
 		}
 
 		games = append(games, game)
 	}
 
-	// Part 1 solution
-	// sum := 0
-	// for _, game := range games {
-	// 	if gameIsPossible(game) {
-	// 		sum += game.ID
-	// 	}
-	// }
+	return
+}
 
-	// Part 2 solution
+func solvePart1(input string) int {
+	games := makeGames(input)
+
+	sum := 0
+	for _, game := range games {
+		if gameIsPossible(game) {
+			sum += game.ID
+		}
+	}
+
+	return sum
+}
+
+func solvePart2(input string) int {
+	games := makeGames(input)
+
 	sum := 0
 	for _, game := range games {
 		sum += gamePower(game)
 	}
 
-	fmt.Println("Sum:", sum)
+	return sum
+}
+
+func main() {
+	lib.AssertEqual(8, solvePart1(TestString))
+	lib.AssertEqual(2286, solvePart2(TestString))
+
+	// dataString := lib.GetDataString(DataFile)
+	// result1 := solvePart1(dataString)
+	// fmt.Println(result1)
+
+	// dataString := lib.GetDataString(DataFile)
+	// result2 := solvePart2(dataString)
+	// fmt.Println(result2)
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"advent-of-code-2023/lib"
-	"fmt"
 	"regexp"
 	"strings"
 )
@@ -73,7 +72,6 @@ type MapLine struct {
 
 	To iterate over maps, we have a function that takes an number and a map and returns
 	the new int
-
 */
 
 func getSeeds(input string) (seeds []int) {
@@ -122,14 +120,12 @@ func transformSeedThroughAllMaps(seed int, maps []Map) int {
 }
 
 func transformSeedThroughMap(seed int, thisMap Map) int {
-	// fmt.Println("Transforming seed", seed, "through map", thisMap.Name)
 	for _, mapLine := range thisMap.MapLines {
 		seed, transformed := transformSeedThroughMapLine(seed, mapLine)
 		if transformed {
 			return seed
 		}
 	}
-	// fmt.Println("Result is", seed)
 	return seed
 }
 
@@ -196,14 +192,14 @@ func solvePart2(input string) int {
 
 func main() {
 	lib.AssertEqual(49, solvePart1(SmallTestString))
-
 	lib.AssertEqual(35, solvePart1(TestString))
 	lib.AssertEqual(46, solvePart2(TestString))
 
-	dataString := lib.GetDataString(DataFile)
+	// dataString := lib.GetDataString(DataFile)
 	// result1 := solvePart1(dataString)
-	result2 := solvePart2(dataString)
-
 	// fmt.Println(result1)
-	fmt.Println(result2)
+
+	// dataString := lib.GetDataString(DataFile)
+	// result2 := solvePart2(dataString)
+	// fmt.Println(result2)
 }

@@ -1,85 +1,67 @@
 package main
 
 import (
-	"bufio"
-	"fmt"
-	"os"
+	"advent-of-code-2023/lib"
+	"strings"
 	"unicode"
 )
 
+const FirstTestString string = `1abc2
+pqr3stu8vwx
+a1b2c3d4e5f
+treb7uchet`
+
+const SecondTestString string = `two1nine
+eightwothree
+abcone2threexyz
+xtwone3four
+4nineeightseven2
+zoneight234
+7pqrstsixteen`
+
 const DataFile string = "data.txt"
 
-func main() {
-	// old value 11, new value 29
-	// test_calibration_value("two1nine", 29)
-	// old value 24, new value 14
-	// test_calibration_value("zoneight234", 14)
-	// old value 22, new value 13
-	// test_calibration_value("abcone2threexyz", 13)
-	// return
+func solvePart1(input string) int {
+	calibrationCodes := strings.Split(input, "\n")
 
-	// Read text from https://adventofcode.com/2023/day/1/input
-	var calibration_codes, err1 = get_calibration_codes()
-	if err1 != nil {
-		fmt.Println("Error:", err1)
-		return
+	sum := 0
+	for _, line := range calibrationCodes {
+		digits := firstAndLastDigit1(line)
+		sum += ((digits[0] * 10) + digits[1])
 	}
 
-	// Convert each line to a number
-	var calibration_values []int = make([]int, len(calibration_codes))
-	for i, line := range calibration_codes {
-		var value, err2 = calibration_value(line)
-		if err2 != nil {
-			fmt.Println("Error:", err2)
-			return
-		} else {
-			calibration_values[i] = value
+	return sum
+}
+
+func firstAndLastDigit1(line string) []int {
+	var digits = make([]int, 0, 2)
+
+	for _, runeValue := range line {
+		if unicode.IsDigit(runeValue) {
+			digits = appendDigit(digits, intFromUnicode(runeValue))
 		}
 	}
 
-	var sum int = 0
-	for _, value := range calibration_values {
-		sum += value
-	}
-
-	// Should return 56324
-	fmt.Println("Sum:", sum)
+	return digits
 }
 
-func get_calibration_codes() ([]string, error) {
-	file, err := os.Open(DataFile)
-
-	if err != nil {
-		fmt.Println("Error:", err)
-		return nil, err
-	}
-	defer file.Close()
-
-	var codes []string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		codes = append(codes, scanner.Text())
-	}
-
-	if err := scanner.Err(); err != nil {
-		fmt.Println("Error:", err)
-	}
-
-	return codes, nil
-}
-
-// Convert string to number
-func calibration_value(line string) (int, error) {
-	digits := first_and_last_digit(line)
-
+func appendDigit(digits []int, digit int) []int {
 	if len(digits) == 0 {
-		return 0, fmt.Errorf("No number in the string. Digits: %v, Line: %s", digits, line)
+		digits = append(digits, digit)
+		digits = append(digits, digit)
+	} else {
+		digits[1] = digit
 	}
-
-	return ((digits[0] * 10) + digits[1]), nil
+	return digits
 }
 
-var digit_names = map[string]int{
+func intFromUnicode(runeValue rune) int {
+	return int(runeValue - '0')
+}
+
+// Part 2
+
+var digitNames = map[string]int{
 	"one":   1,
 	"two":   2,
 	"three": 3,
@@ -91,20 +73,32 @@ var digit_names = map[string]int{
 	"nine":  9,
 }
 
-func first_and_last_digit(line string) []int {
+func solvePart2(input string) int {
+	calibrationCodes := strings.Split(input, "\n")
+
+	sum := 0
+	for _, line := range calibrationCodes {
+		digits := firstAndLastDigit2(line)
+		sum += ((digits[0] * 10) + digits[1])
+	}
+
+	return sum
+}
+
+func firstAndLastDigit2(line string) []int {
 	var digits = make([]int, 0, 2)
-	var sequential_letters string = ""
+	var sequentialLetters string = ""
 
 	for _, runeValue := range line {
 		if unicode.IsDigit(runeValue) {
-			sequential_letters = ""
-			digits = append_digit(digits, int_from_unicode(runeValue))
+			sequentialLetters = ""
+			digits = appendDigit(digits, intFromUnicode(runeValue))
 		} else {
-			sequential_letters += string(runeValue)
-			var count = len(sequential_letters)
-			for name, value := range digit_names {
-				if count >= len(name) && sequential_letters[count-len(name):] == name {
-					digits = append_digit(digits, value)
+			sequentialLetters += string(runeValue)
+			var count = len(sequentialLetters)
+			for name, value := range digitNames {
+				if count >= len(name) && sequentialLetters[count-len(name):] == name {
+					digits = appendDigit(digits, value)
 				}
 			}
 		}
@@ -113,26 +107,15 @@ func first_and_last_digit(line string) []int {
 	return digits
 }
 
-func append_digit(digits []int, digit int) []int {
-	if len(digits) == 0 {
-		digits = append(digits, digit)
-		digits = append(digits, digit)
-	} else {
-		digits[1] = digit
-	}
-	return digits
-}
+func main() {
+	lib.AssertEqual(142, solvePart1(FirstTestString))
+	lib.AssertEqual(281, solvePart2(SecondTestString))
 
-func int_from_unicode(runeValue rune) int {
-	return int(runeValue - '0')
-}
+	// dataString := lib.GetDataString(DataFile)
+	// result1 := solvePart1(dataString)
+	// fmt.Println(result1)
 
-func test_calibration_value(code string, expected int) {
-	var result, _ = calibration_value(code)
-	if result != expected {
-		fmt.Println(fmt.Sprintf("Failure: expected %d, got %d", expected, result))
-		return
-	} else {
-		fmt.Println("Success")
-	}
+	// dataString := lib.GetDataString(DataFile)
+	// result2 := solvePart2(dataString)
+	// fmt.Println(result2)
 }

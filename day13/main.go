@@ -200,8 +200,6 @@ func main() {
 	lib.AssertEqual(300, solvePart2(SmallTestString))
 	lib.AssertEqual(400, solvePart2(TestString))
 
-	// lib.AssertEqual(1, solvePart2(SmallTestString))
-
 	// dataString := lib.GetDataString(DataFile)
 	// result1 := solvePart1(dataString)
 	// fmt.Println(result1)

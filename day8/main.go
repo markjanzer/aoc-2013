@@ -2,7 +2,6 @@ package main
 
 import (
 	"advent-of-code-2023/lib"
-	"fmt"
 	"regexp"
 	"strings"
 )
@@ -135,10 +134,6 @@ func (journey Journey) hasConsistentLoopInterval() bool {
 	return firstLoop == secondLoop
 }
 
-func (journey Journey) initialComplete() int {
-	return journey.CompletedAt[0]
-}
-
 func (journey Journey) loop() int {
 	return journey.CompletedAt[2] - journey.CompletedAt[1]
 }
@@ -205,20 +200,16 @@ func solvePart2(input string) uint64 {
 }
 
 func main() {
-	// lib.AssertEqual(2, solvePart1(TestString))
+	lib.AssertEqual(2, solvePart1(TestString))
 	// lib.AssertEqual(6, solvePart1(SmallTestString))
 
 	lib.AssertEqual(6, int(solvePart2(TestString2)))
-	// lib.AssertEqual(1, solvePart2(SmallTestString))
 
 	// dataString := lib.GetDataString(DataFile)
 	// result1 := solvePart1(dataString)
 	// fmt.Println(result1)
 
-	// fmt.Println(gcd(200, 80))
-	// fmt.Println(lib.LcmOfSlice([]uint64{3, 6, 10}))
-
-	dataString := lib.GetDataString(DataFile)
-	result2 := solvePart2(dataString)
-	fmt.Println(result2)
+	// dataString := lib.GetDataString(DataFile)
+	// result2 := solvePart2(dataString)
+	// fmt.Println(result2)
 }

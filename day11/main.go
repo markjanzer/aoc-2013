@@ -184,13 +184,11 @@ func main() {
 	lib.AssertEqual(1030, combinedGalaxyDistances(TestString, 10))
 	lib.AssertEqual(8410, combinedGalaxyDistances(TestString, 100))
 
-	dataString := lib.GetDataString(DataFile)
-	result1 := solvePart1(dataString)
-	lib.AssertEqual(9742154, result1)
+	// dataString := lib.GetDataString(DataFile)
+	// result1 := solvePart1(dataString)
 	// fmt.Println(result1)
 
 	// dataString := lib.GetDataString(DataFile)
-	result2 := solvePart2(dataString)
-	lib.AssertEqual(411142919886, result2)
+	// result2 := solvePart2(dataString)
 	// fmt.Println(result2)
 }

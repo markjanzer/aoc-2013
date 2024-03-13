@@ -279,9 +279,6 @@ func main() {
 	lib.AssertEqual(19114, solvePart1(TestString))
 	lib.AssertEqual(167409079868000, solvePart2(TestString))
 
-	// lib.AssertEqual(1, solvePart1(SmallTestString))
-	// lib.AssertEqual(1, solvePart2(SmallTestString))
-
 	// dataString := lib.GetDataString(DataFile)
 	// result1 := solvePart1(dataString)
 	// fmt.Println(result1)
