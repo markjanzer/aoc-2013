@@ -164,14 +164,16 @@ func solvePart2(input string) (sum int) {
 
 func main() {
 	lib.AssertEqual(21, solvePart1(TestString))
-	// lib.AssertEqual(1, solveLine2(SmallTest1))
-	// lib.AssertEqual(16384, solveLine2(SmallTest2))
-	// lib.AssertEqual(1, solveLine2(SmallTest3))
-	// lib.AssertEqual(16, solveLine2(SmallTest4))
 
 	// This was breaking because my serialization wasn't separating numbers with commas
 	// so 1,1 was being treated as 11 and vice versa
-	// lib.AssertEqual(1, solvePart1("#?#??..?.#?????#???# 1,1,1,1,11"))
+	lib.AssertEqual(1, solvePart1("#?#??..?.#?????#???# 1,1,1,1,11"))
+
+	lib.AssertEqual(1, solveLine2(SmallTest1))
+	lib.AssertEqual(16384, solveLine2(SmallTest2))
+	lib.AssertEqual(1, solveLine2(SmallTest3))
+	lib.AssertEqual(16, solveLine2(SmallTest4))
+	lib.AssertEqual(525152, solvePart2(TestString))
 
 	// dataString := lib.GetDataString(DataFile)
 	// result1 := solvePart1(dataString)
