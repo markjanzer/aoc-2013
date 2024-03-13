@@ -22,7 +22,7 @@ I've included a setup.sh script. This script automates the creation of the direc
 This will create a new directory for the day with a template main.go and an empty data.txt file.
 
 ## Reflections and shoutouts
-I've had a really great time getting more familiar with Go, and I'm eager to use it more in the future. Shout out to [Derat's Go solutions](https://codeberg.org/derat/advent-of-code) for helping me when I got stuck, and [the subreddit](https://www.reddit.com/r/adventofcode/) for its brilliant and unhinged solutions. 
+I've had a really great time getting more familiar with Go, and I'm eager to use it more in the future. Shout out to [Derat's Go solutions](https://codeberg.org/derat/advent-of-code) for helping me when I got stuck, and [the subreddit](https://www.reddit.com/r/adventofcode/) for their brilliant and unhinged solutions. 
 
 Happy to answer any questions.
 
